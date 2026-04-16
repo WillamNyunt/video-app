@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+
+# Uploads
+server/uploads/
+
+# OS
+.DS_Store
+
+# Local Claude settings
+.claude/settings.local.json
+
+# Memory
+.claude/projects/
