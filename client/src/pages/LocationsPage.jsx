@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Plus, Trash2 } from 'lucide-react';
 import { getLocations, createLocation, deleteLocation } from '../api/locations';
+import { getUploadUrl } from '../api/files';
 import { useAuth } from '../context/AuthContext';
 import './LocationsPage.css';
 
@@ -114,8 +115,8 @@ export default function LocationsPage() {
               onKeyDown={(e) => e.key === 'Enter' && navigate(`/locations/${loc._id}`)}
             >
               <div className="location-card__thumbnail">
-                {loc.thumbnailUrl ? (
-                  <img src={loc.thumbnailUrl} alt={loc.address} />
+                {getUploadUrl(loc.thumbnailUrl) ? (
+                  <img src={getUploadUrl(loc.thumbnailUrl)} alt={loc.address} />
                 ) : (
                   <div className="location-card__placeholder">
                     <MapPin size={28} />

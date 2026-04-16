@@ -1,4 +1,7 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '../.env') });
 import express from 'express';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
@@ -6,6 +9,7 @@ import cors from 'cors';
 
 import { seed } from './src/seed.js';
 
+import { authMiddleware } from './src/middleware/auth.js';
 import authRoutes from './src/routes/auth.js';
 import locationRoutes from './src/routes/locations.js';
 import sessionRoutes from './src/routes/sessions.js';
@@ -25,6 +29,10 @@ app.use(cors({
 }));
 app.use(cookieParser());
 app.use(express.json());
+
+// Auth-gated static file serving for uploads (thumbnails, location images, etc.)
+const uploadsPath = resolve(process.env.STORAGE_PATH || './uploads');
+app.use('/api/uploads', authMiddleware, express.static(uploadsPath));
 
 // Routes
 app.use('/api/auth', authRoutes);

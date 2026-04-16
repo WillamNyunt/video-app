@@ -6,6 +6,7 @@ import { getVideos, createVideo, deleteVideo } from '../api/videos';
 import { getPeople } from '../api/people';
 import { useAuth } from '../context/AuthContext';
 import VideoCard from '../components/VideoCard';
+import VideoPlayerModal from '../components/VideoPlayerModal';
 import './SessionDetailPage.css';
 
 function formatDate(dateStr) {
@@ -57,6 +58,7 @@ export default function SessionDetailPage() {
   const [uploadError, setUploadError] = useState('');
 
   const [deleteError, setDeleteError] = useState('');
+  const [playerIndex, setPlayerIndex] = useState(null);
 
   useEffect(() => { fetchData(); }, [id]);
 
@@ -286,16 +288,25 @@ export default function SessionDetailPage() {
         </p>
       ) : (
         <div className="card-grid">
-          {filteredVideos.map((v) => (
+          {filteredVideos.map((v, i) => (
             <VideoCard
               key={v._id}
               video={v}
               people={getPeopleForVideo(v)}
               isAdmin={isAdmin}
               onDelete={handleDelete}
+              onClick={() => setPlayerIndex(i)}
             />
           ))}
         </div>
+      )}
+
+      {playerIndex !== null && (
+        <VideoPlayerModal
+          videos={filteredVideos}
+          startIndex={playerIndex}
+          onClose={() => setPlayerIndex(null)}
+        />
       )}
 
       {showUpload && (

@@ -1,0 +1,131 @@
+.vplayer-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.95);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.vplayer-counter {
+  position: fixed;
+  top: 16px;
+  left: 20px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.8;
+  z-index: 201;
+  pointer-events: none;
+}
+
+.vplayer-close {
+  position: fixed;
+  top: 10px;
+  right: 14px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  z-index: 201;
+  transition: background-color 0.15s ease;
+}
+
+.vplayer-close:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.vplayer-slide {
+  height: 82vh;
+  aspect-ratio: 9 / 16;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background-color: #000;
+  flex-shrink: 0;
+}
+
+.vplayer-slide--next {
+  animation: slideInFromBottom 0.3s ease;
+}
+
+.vplayer-slide--prev {
+  animation: slideInFromTop 0.3s ease;
+}
+
+@keyframes slideInFromBottom {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes slideInFromTop {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+
+.vplayer-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.vplayer-info-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.85));
+  pointer-events: none;
+}
+
+.vplayer-title {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  pointer-events: none;
+}
+
+.vplayer-nav {
+  background-color: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.vplayer-nav:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.vplayer-nav:disabled {
+  opacity: 0.25;
+  cursor: default;
+}

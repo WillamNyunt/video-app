@@ -2,10 +2,26 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-function makeStorage(subdir) {
+/**
+ * Returns a date-based subdirectory string, e.g. "videos/2025-04".
+ * Called at upload time so each file lands in the correct month folder.
+ */
+function dateSubdir(type) {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  return `${type}/${yyyy}-${mm}`;
+}
+
+/**
+ * makeStorage accepts a string subdir or a function(req, file) => string.
+ * When a function is provided it is called per-file at upload time.
+ */
+function makeStorage(subdirOrFn) {
   return multer.diskStorage({
     destination(req, file, cb) {
       const storagePath = process.env.STORAGE_PATH || './uploads';
+      const subdir = typeof subdirOrFn === 'function' ? subdirOrFn(req, file) : subdirOrFn;
       const dest = path.resolve(storagePath, subdir);
       fs.mkdirSync(dest, { recursive: true });
       cb(null, dest);
@@ -19,44 +35,21 @@ function makeStorage(subdir) {
 }
 
 // Single video file field + optional thumbnail
-export const uploadVideo = multer({ storage: makeStorage('videos') });
+export const uploadVideo = multer({ storage: makeStorage(() => dateSubdir('videos')) });
 
 // For thumbnail-only uploads (video metadata update etc.)
-export const uploadThumbnail = multer({ storage: makeStorage('thumbnails') });
+export const uploadThumbnail = multer({ storage: makeStorage(() => dateSubdir('thumbnails')) });
 
-// For video PUT: routes video field to videos/ and thumbnail to thumbnails/
+// For video PUT: routes video field to dated videos/ and thumbnail to dated thumbnails/
 export const uploadVideoUpdate = multer({
-  storage: multer.diskStorage({
-    destination(req, file, cb) {
-      const storagePath = process.env.STORAGE_PATH || './uploads';
-      const subdir = file.fieldname === 'video' ? 'videos' : 'thumbnails';
-      const dest = path.resolve(storagePath, subdir);
-      fs.mkdirSync(dest, { recursive: true });
-      cb(null, dest);
-    },
-    filename(req, file, cb) {
-      const ext = path.extname(file.originalname);
-      const base = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      cb(null, `${base}${ext}`);
-    },
-  }),
+  storage: makeStorage((req, file) =>
+    file.fieldname === 'video' ? dateSubdir('videos') : dateSubdir('thumbnails')
+  ),
 });
 
-// Location images: two fields — picture and thumbnail
+// Location images: two fields — picture and thumbnail (no date subdirectory)
 export const uploadLocationImages = multer({
-  storage: multer.diskStorage({
-    destination(req, file, cb) {
-      const storagePath = process.env.STORAGE_PATH || './uploads';
-      const dest = path.resolve(storagePath, 'location-images');
-      fs.mkdirSync(dest, { recursive: true });
-      cb(null, dest);
-    },
-    filename(req, file, cb) {
-      const ext = path.extname(file.originalname);
-      const base = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      cb(null, `${base}${ext}`);
-    },
-  }),
+  storage: makeStorage('location-images'),
 });
 
 /**

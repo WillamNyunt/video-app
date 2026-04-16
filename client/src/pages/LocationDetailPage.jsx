@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, MapPin, Plus, Trash2, Calendar, Pencil } from 'lucide-react';
 import { getLocation, updateLocation } from '../api/locations';
 import { getSessions, createSession, deleteSession } from '../api/sessions';
+import { getUploadUrl } from '../api/files';
 import { useAuth } from '../context/AuthContext';
 import './LocationDetailPage.css';
 
@@ -121,9 +122,9 @@ export default function LocationDetailPage() {
       {location && (
         <div className="location-detail-header">
           <div className="location-detail-picture">
-            {location.pictureUrl ? (
+            {getUploadUrl(location.pictureUrl) ? (
               <img
-                src={location.pictureUrl}
+                src={getUploadUrl(location.pictureUrl)}
                 alt={location.address}
                 className="location-detail-image"
               />
