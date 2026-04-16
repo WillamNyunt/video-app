@@ -20,7 +20,6 @@ export default function LocationsPage() {
 
   // Form state
   const [address, setAddress] = useState('');
-  const [pictureFile, setPictureFile] = useState(null);
   const [thumbnailFile, setThumbnailFile] = useState(null);
 
   useEffect(() => {
@@ -51,7 +50,6 @@ export default function LocationsPage() {
     try {
       const fd = new FormData();
       fd.append('address', address.trim());
-      if (pictureFile) fd.append('picture', pictureFile);
       if (thumbnailFile) fd.append('thumbnail', thumbnailFile);
       const newLoc = await createLocation(fd);
       setLocations((prev) => [newLoc, ...prev]);
@@ -78,7 +76,6 @@ export default function LocationsPage() {
   function closeModal() {
     setShowModal(false);
     setAddress('');
-    setPictureFile(null);
     setThumbnailFile(null);
     setFormError('');
   }
@@ -158,16 +155,6 @@ export default function LocationsPage() {
                   onChange={(e) => setAddress(e.target.value)}
                   disabled={submitting}
                   autoFocus
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Picture</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="form-input"
-                  onChange={(e) => setPictureFile(e.target.files[0])}
-                  disabled={submitting}
                 />
               </div>
               <div className="form-group" style={{ marginBottom: 4 }}>

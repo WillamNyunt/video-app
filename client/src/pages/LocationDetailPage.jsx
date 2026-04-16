@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, MapPin, Plus, Trash2, Calendar } from 'lucide-react';
-import { getLocation } from '../api/locations';
+import { ChevronLeft, MapPin, Plus, Trash2, Calendar, Pencil } from 'lucide-react';
+import { getLocation, updateLocation } from '../api/locations';
 import { getSessions, createSession, deleteSession } from '../api/sessions';
 import { useAuth } from '../context/AuthContext';
 import './LocationDetailPage.css';
@@ -24,6 +24,8 @@ export default function LocationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteError, setDeleteError] = useState('');
+  const [pictureError, setPictureError] = useState('');
+  const pictureInputRef = useRef(null);
 
   const [showModal, setShowModal] = useState(false);
   const [formError, setFormError] = useState('');
@@ -81,6 +83,22 @@ export default function LocationDetailPage() {
     }
   }
 
+  async function handlePictureChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setPictureError('');
+    try {
+      const fd = new FormData();
+      fd.append('picture', file);
+      const updated = await updateLocation(id, fd);
+      setLocation(updated);
+    } catch (err) {
+      setPictureError(err.message);
+    } finally {
+      e.target.value = '';
+    }
+  }
+
   function closeModal() {
     setShowModal(false);
     setDate('');
@@ -102,19 +120,42 @@ export default function LocationDetailPage() {
 
       {location && (
         <div className="location-detail-header">
-          {location.pictureUrl && (
-            <img
-              src={location.pictureUrl}
-              alt={location.address}
-              className="location-detail-image"
+          <div className="location-detail-picture">
+            {location.pictureUrl ? (
+              <img
+                src={location.pictureUrl}
+                alt={location.address}
+                className="location-detail-image"
+              />
+            ) : (
+              <div className="location-detail-image location-detail-image--empty">
+                <MapPin size={24} />
+              </div>
+            )}
+            {isAdmin && (
+              <button
+                className="location-picture-edit-btn"
+                onClick={() => pictureInputRef.current?.click()}
+                title="Change picture"
+              >
+                <Pencil size={13} />
+              </button>
+            )}
+            <input
+              ref={pictureInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handlePictureChange}
             />
-          )}
+          </div>
           <div className="location-detail-info">
             <MapPin size={18} className="location-detail-icon" />
             <h1 className="page-title">{location.address}</h1>
           </div>
         </div>
       )}
+      {pictureError && <p className="error-message" style={{ marginBottom: 16 }}>{pictureError}</p>}
 
       <div className="page-header" style={{ marginTop: 28 }}>
         <h2 className="section-title">Sessions ({sessions.length})</h2>

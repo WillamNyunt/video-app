@@ -22,6 +22,19 @@ const SORT_OPTIONS = [
   { value: 'duration', label: 'Duration' },
 ];
 
+function parseFilename(filename) {
+  const base = filename.replace(/\.[^.]+$/, '');
+  const timeMatch = base.match(/_(\d{1,2}:\d{2}(?::\d{2})?)$/);
+  let timestamp = '';
+  let title = base;
+  if (timeMatch) {
+    timestamp = timeMatch[1];
+    title = base.slice(0, base.length - timeMatch[0].length);
+  }
+  title = title.replace(/_/g, ' ').trim();
+  return { title, timestamp };
+}
+
 export default function SessionDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -29,31 +42,23 @@ export default function SessionDetailPage() {
 
   const [session, setSession] = useState(null);
   const [videos, setVideos] = useState([]);
-  const [allPeople, setAllPeople] = useState([]);
-  // personId → person object map for quick lookup
   const [personVideoMap, setPersonVideoMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Client-side filter/sort state
   const [filterText, setFilterText] = useState('');
   const [sortBy, setSortBy] = useState('timestamp');
   const [sortAsc, setSortAsc] = useState(true);
 
-  // Upload modal state
   const [showUpload, setShowUpload] = useState(false);
-  const [uploadError, setUploadError] = useState('');
+  const [uploadItems, setUploadItems] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadTitle, setUploadTitle] = useState('');
-  const [uploadTimestamp, setUploadTimestamp] = useState('');
-  const [uploadFile, setUploadFile] = useState(null);
-  const [uploadThumbnail, setUploadThumbnail] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const [uploadError, setUploadError] = useState('');
 
   const [deleteError, setDeleteError] = useState('');
 
-  useEffect(() => {
-    fetchData();
-  }, [id]);
+  useEffect(() => { fetchData(); }, [id]);
 
   async function fetchData() {
     setLoading(true);
@@ -66,12 +71,8 @@ export default function SessionDetailPage() {
       ]);
       setSession(sess);
       setVideos(vids);
-      setAllPeople(people);
-      // Build a map of videoId → [person, ...]
-      // We'll use people's video associations (fetched separately via video's people field if available)
-      // Or we keep allPeople and filter by video._id if person-video data is embedded
       const pmap = {};
-      people.forEach((p) => pmap[p._id] = p);
+      people.forEach((p) => { pmap[p._id] = p; });
       setPersonVideoMap(pmap);
     } catch (err) {
       setError(err.message);
@@ -80,8 +81,6 @@ export default function SessionDetailPage() {
     }
   }
 
-  // Get people chips for a video
-  // The API may return video.people as an array of personIds
   function getPeopleForVideo(video) {
     if (!video.people || !Array.isArray(video.people)) return [];
     return video.people.map((pid) => {
@@ -90,19 +89,12 @@ export default function SessionDetailPage() {
     }).filter(Boolean);
   }
 
-  // Client-side filter + sort (no API calls)
   const filteredVideos = useMemo(() => {
     let result = [...videos];
-
-    // Filter by title text
     if (filterText.trim()) {
       const lower = filterText.toLowerCase();
-      result = result.filter((v) =>
-        v.title.toLowerCase().includes(lower)
-      );
+      result = result.filter((v) => v.title.toLowerCase().includes(lower));
     }
-
-    // Sort
     result.sort((a, b) => {
       let valA, valB;
       switch (sortBy) {
@@ -118,49 +110,92 @@ export default function SessionDetailPage() {
           valA = a.durationSeconds ?? -1;
           valB = b.durationSeconds ?? -1;
           break;
-        case 'timestamp':
         default:
           valA = a.timestamp || '';
           valB = b.timestamp || '';
-          break;
       }
       if (valA < valB) return sortAsc ? -1 : 1;
       if (valA > valB) return sortAsc ? 1 : -1;
       return 0;
     });
-
     return result;
   }, [videos, filterText, sortBy, sortAsc]);
 
   function toggleSort(field) {
-    if (sortBy === field) {
-      setSortAsc((prev) => !prev);
-    } else {
-      setSortBy(field);
-      setSortAsc(true);
-    }
+    if (sortBy === field) setSortAsc((prev) => !prev);
+    else { setSortBy(field); setSortAsc(true); }
   }
 
-  async function handleUpload(e) {
+  function handleFilesSelected(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    const items = files.map((file) => {
+      const { title, timestamp } = parseFilename(file.name);
+      return { file, title, timestamp, thumbnailFile: null, error: null };
+    });
+    setUploadItems(items);
+    setUploadError('');
+    e.target.value = '';
+  }
+
+  function updateItem(index, field, value) {
+    setUploadItems((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  }
+
+  async function handleUploadAll(e) {
     e.preventDefault();
     setUploadError('');
-    if (!uploadTitle.trim()) { setUploadError('Title is required.'); return; }
-    if (!uploadFile) { setUploadError('Video file is required.'); return; }
+
+    const missing = uploadItems.findIndex((item) => !item.title.trim() || !item.thumbnailFile);
+    if (missing !== -1) {
+      setUploadError(`Item ${missing + 1}: title and thumbnail are required for all videos.`);
+      return;
+    }
+
     setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('sessionId', id);
-      fd.append('title', uploadTitle.trim());
-      if (uploadTimestamp.trim()) fd.append('timestamp', uploadTimestamp.trim());
-      fd.append('file', uploadFile);
-      if (uploadThumbnail) fd.append('thumbnail', uploadThumbnail);
-      const newVideo = await createVideo(fd);
-      setVideos((prev) => [newVideo, ...prev]);
+    const results = [];
+
+    for (let i = 0; i < uploadItems.length; i++) {
+      setUploadProgress({ current: i + 1, total: uploadItems.length });
+      const item = uploadItems[i];
+      try {
+        const fd = new FormData();
+        fd.append('sessionId', id);
+        fd.append('title', item.title.trim());
+        if (item.timestamp.trim()) fd.append('timestamp', item.timestamp.trim());
+        fd.append('video', item.file);
+        fd.append('thumbnail', item.thumbnailFile);
+        const newVideo = await createVideo(fd);
+        results.push({ ok: true, video: newVideo });
+        setVideos((prev) => [newVideo, ...prev]);
+        // Mark item as done
+        setUploadItems((prev) => {
+          const next = [...prev];
+          next[i] = { ...next[i], error: null, done: true };
+          return next;
+        });
+      } catch (err) {
+        results.push({ ok: false, error: err.message });
+        setUploadItems((prev) => {
+          const next = [...prev];
+          next[i] = { ...next[i], error: err.message };
+          return next;
+        });
+      }
+    }
+
+    setUploading(false);
+    setUploadProgress(null);
+
+    const failed = results.filter((r) => !r.ok).length;
+    if (failed === 0) {
       closeUpload();
-    } catch (err) {
-      setUploadError(err.message);
-    } finally {
-      setUploading(false);
+    } else {
+      setUploadError(`${failed} of ${results.length} uploads failed. See items above.`);
     }
   }
 
@@ -177,10 +212,9 @@ export default function SessionDetailPage() {
 
   function closeUpload() {
     setShowUpload(false);
-    setUploadTitle('');
-    setUploadTimestamp('');
-    setUploadFile(null);
-    setUploadThumbnail(null);
+    setUploadItems([]);
+    setUploading(false);
+    setUploadProgress(null);
     setUploadError('');
   }
 
@@ -207,7 +241,6 @@ export default function SessionDetailPage() {
         </div>
       )}
 
-      {/* Filter + Sort Controls */}
       <div className="session-controls">
         <div className="session-search">
           <Search size={15} className="session-search__icon" />
@@ -239,7 +272,7 @@ export default function SessionDetailPage() {
         {isAdmin && (
           <button className="btn btn-primary" onClick={() => setShowUpload(true)}>
             <Plus size={16} />
-            Upload Video
+            Upload Videos
           </button>
         )}
       </div>
@@ -266,62 +299,94 @@ export default function SessionDetailPage() {
       )}
 
       {showUpload && (
-        <div className="modal-overlay" onClick={closeUpload}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">Upload Video</h2>
-            {uploadError && <p className="error-message" style={{ marginBottom: 16 }}>{uploadError}</p>}
-            <form onSubmit={handleUpload}>
-              <div className="form-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Title *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={uploadTitle}
-                  onChange={(e) => setUploadTitle(e.target.value)}
-                  disabled={uploading}
-                  autoFocus
-                />
+        <div className="modal-overlay" onClick={!uploading ? closeUpload : undefined}>
+          <div className="modal upload-modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Upload Videos</h2>
+
+            {uploadItems.length === 0 ? (
+              <div className="upload-drop-area">
+                <p className="upload-drop-hint">Select one or more video files</p>
+                <label className="btn btn-primary upload-file-label">
+                  Choose Files
+                  <input
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleFilesSelected}
+                  />
+                </label>
               </div>
-              <div className="form-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Timestamp (e.g. 00:04:32)</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="00:00:00"
-                  value={uploadTimestamp}
-                  onChange={(e) => setUploadTimestamp(e.target.value)}
-                  disabled={uploading}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Video File *</label>
-                <input
-                  type="file"
-                  accept="video/*"
-                  className="form-input"
-                  onChange={(e) => setUploadFile(e.target.files[0])}
-                  disabled={uploading}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: 4 }}>
-                <label className="form-label">Thumbnail (image)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="form-input"
-                  onChange={(e) => setUploadThumbnail(e.target.files[0])}
-                  disabled={uploading}
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn btn-secondary" onClick={closeUpload} disabled={uploading}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={uploading}>
-                  {uploading ? 'Uploading...' : 'Upload'}
-                </button>
-              </div>
-            </form>
+            ) : (
+              <form onSubmit={handleUploadAll}>
+                {uploadError && (
+                  <p className="error-message" style={{ marginBottom: 16 }}>{uploadError}</p>
+                )}
+
+                <div className="upload-items-list">
+                  {uploadItems.map((item, i) => (
+                    <div
+                      key={i}
+                      className={`upload-item${item.done ? ' upload-item--done' : ''}${item.error ? ' upload-item--error' : ''}`}
+                    >
+                      <p className="upload-item__filename">{item.file.name}</p>
+                      {item.error && (
+                        <p className="upload-item__error">{item.error}</p>
+                      )}
+                      <div className="upload-item__fields">
+                        <div className="form-group">
+                          <label className="form-label">Title *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={item.title}
+                            onChange={(e) => updateItem(i, 'title', e.target.value)}
+                            disabled={uploading || item.done}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Timestamp</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="HH:MM"
+                            value={item.timestamp}
+                            onChange={(e) => updateItem(i, 'timestamp', e.target.value)}
+                            disabled={uploading || item.done}
+                          />
+                        </div>
+                        <div className="form-group upload-item__thumb">
+                          <label className="form-label">Thumbnail *</label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="form-input"
+                            onChange={(e) => updateItem(i, 'thumbnailFile', e.target.files[0] || null)}
+                            disabled={uploading || item.done}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={closeUpload}
+                    disabled={uploading}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={uploading}>
+                    {uploading
+                      ? `Uploading ${uploadProgress?.current} / ${uploadProgress?.total}...`
+                      : `Upload ${uploadItems.length} Video${uploadItems.length !== 1 ? 's' : ''}`}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

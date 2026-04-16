@@ -19,7 +19,7 @@
   display: block;
   position: relative;
   background-color: var(--color-border);
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 9 / 16;
   overflow: hidden;
 }
 
