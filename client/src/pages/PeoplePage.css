@@ -1,0 +1,49 @@
+.person-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px 16px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition), border-color var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+
+.person-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent);
+}
+
+.person-card__avatar {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.person-card__body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.person-card__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-card__delete {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.person-card:hover .person-card__delete {
+  opacity: 1;
+}

@@ -1,0 +1,20 @@
+.person-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: var(--color-surface);
+  color: var(--color-accent);
+  border: 1px solid var(--color-border);
+  text-decoration: none;
+  transition: background-color var(--transition), border-color var(--transition);
+  white-space: nowrap;
+}
+
+.person-chip:hover {
+  background-color: var(--color-accent);
+  color: #ffffff;
+  border-color: var(--color-accent);
+}

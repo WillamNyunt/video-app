@@ -1,0 +1,124 @@
+.settings-section {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 22px 24px;
+  margin-bottom: 24px;
+}
+
+.settings-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.settings-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+}
+
+.settings-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.settings-hint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.theme-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+}
+
+.theme-toggle-btn {
+  flex-shrink: 0;
+}
+
+/* Schema list */
+.schema-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.schema-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.schema-row__info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.schema-row__label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.schema-row__type {
+  text-transform: capitalize;
+}
+
+.schema-row__detail {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.schema-row__actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Schema form options */
+.schema-options {
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.schema-option-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.schema-option-row .form-input {
+  flex: 1;
+}
+
+.schema-add-option {
+  align-self: flex-start;
+  font-size: 13px;
+  padding: 5px 10px;
+}
+
+.schema-options-row {
+  display: flex;
+  gap: 12px;
+}
+
+.schema-options-row .form-group {
+  flex: 1;
+}

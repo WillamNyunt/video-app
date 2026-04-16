@@ -1,0 +1,143 @@
+.person-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.person-detail-avatar {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.person-detail-info {
+  flex: 1;
+}
+
+.person-name-input {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.person-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Attributes */
+.person-attrs {
+  margin-bottom: 36px;
+  padding: 20px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.person-attrs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.attr-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.attr-row:last-child {
+  border-bottom: none;
+}
+
+.attr-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.attr-value {
+  flex: 1;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.attr-empty {
+  color: var(--color-text-secondary);
+}
+
+.attr-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.attr-checkbox.checked {
+  color: var(--color-success);
+}
+
+.attr-slider-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.attr-slider-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  min-width: 28px;
+  text-align: right;
+}
+
+.attr-slider-track {
+  flex: 1;
+  height: 6px;
+  background-color: var(--color-border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.attr-slider-fill {
+  height: 100%;
+  background-color: var(--color-accent);
+  border-radius: 99px;
+  transition: width var(--transition);
+}
+
+.attr-slider-range {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* Edit mode */
+.attr-edit-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.attr-edit-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.attr-edit-slider input[type="range"] {
+  flex: 1;
+  accent-color: var(--color-accent);
+}
+
+/* Videos section */
+.person-videos {
+  margin-top: 8px;
+}

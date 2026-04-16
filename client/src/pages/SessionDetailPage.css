@@ -1,0 +1,82 @@
+.session-detail-header {
+  margin-bottom: 24px;
+}
+
+.session-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 14px 16px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.session-search {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.session-search__icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.session-search__input {
+  padding-left: 32px;
+}
+
+.session-sort {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.session-sort__label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.session-sort__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.session-sort__btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.session-sort__btn.active {
+  background-color: var(--color-accent);
+  color: #ffffff;
+  border-color: var(--color-accent);
+}
+
+.sort-icon {
+  transition: transform var(--transition);
+}
+
+.sort-icon.desc {
+  transform: rotate(180deg);
+}
