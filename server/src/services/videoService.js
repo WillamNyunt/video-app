@@ -1,10 +1,31 @@
 import path from 'path';
 import fs from 'fs';
+import mongoose from 'mongoose';
 import Video from '../models/Video.js';
+import PersonVideo from '../models/PersonVideo.js';
 
 export async function getAllVideos(sessionId) {
-  const query = sessionId ? { sessionId } : {};
-  return Video.find(query).sort({ createdAt: -1 });
+  if (sessionId) {
+    return Video.aggregate([
+      { $match: { sessionId: new mongoose.Types.ObjectId(sessionId) } },
+      {
+        $lookup: {
+          from: 'personvideos',
+          localField: '_id',
+          foreignField: 'videoId',
+          as: 'personVideoLinks',
+        },
+      },
+      {
+        $addFields: {
+          people: '$personVideoLinks.personId',
+        },
+      },
+      { $project: { personVideoLinks: 0 } },
+      { $sort: { createdAt: -1 } },
+    ]);
+  }
+  return Video.find({}).sort({ createdAt: -1 });
 }
 
 export async function getVideoById(id) {
@@ -40,8 +61,6 @@ export async function deleteVideo(id) {
 
 export function resolveVideoFilePath(filePath) {
   const storagePath = process.env.STORAGE_PATH || './uploads';
-  // filePath stored in DB is relative, e.g. "videos/abc.mp4"
-  // Resolve from storagePath
   const resolved = path.isAbsolute(filePath)
     ? filePath
     : path.resolve(storagePath, filePath);

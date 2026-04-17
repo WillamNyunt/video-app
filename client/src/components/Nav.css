@@ -10,38 +10,146 @@
   flex-direction: column;
   padding: 20px 0;
   z-index: 50;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
+/* ── Dark mode: glass nav ── */
+[data-theme="dark"] .nav {
+  background: rgba(10, 8, 20, 0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── Brand ── */
 .nav__brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 18px 20px;
+  padding: 0 16px 20px;
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text-primary);
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 12px;
+  letter-spacing: -0.01em;
 }
 
-.nav__user {
+.nav__brand-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background-color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .nav__brand-icon {
+  background: var(--gradient-accent);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
+}
+
+[data-theme="dark"] .nav__brand {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .nav__brand-name {
+  background: var(--gradient-accent-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Avatar section ── */
+.nav__avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 12px;
+}
+
+[data-theme="dark"] .nav__avatar-section {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.nav__avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background-color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  transition: box-shadow var(--transition);
+}
+
+[data-theme="dark"] .nav__avatar {
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5), 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.nav__avatar--clickable {
+  cursor: pointer;
+}
+
+.nav__avatar--clickable:hover .nav__avatar-edit-hint {
+  opacity: 1;
+}
+
+.nav__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nav__avatar-initials {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+.nav__avatar-edit-hint {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.nav__user-info {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 18px 12px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .nav__username {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-primary);
-  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 120px;
 }
 
+/* ── Nav links ── */
 .nav__links {
   flex: 1;
   display: flex;
@@ -60,11 +168,16 @@
   font-weight: 500;
   color: var(--color-text-secondary);
   text-decoration: none;
-  transition: background-color var(--transition), color var(--transition);
+  transition: background-color var(--transition), color var(--transition), box-shadow var(--transition);
 }
 
 .nav__link:hover {
   background-color: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .nav__link:hover {
+  background: rgba(255, 255, 255, 0.06);
   color: var(--color-text-primary);
 }
 
@@ -73,6 +186,13 @@
   color: #ffffff;
 }
 
+[data-theme="dark"] .nav__link.active {
+  background: var(--gradient-accent);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+}
+
+/* ── Footer ── */
 .nav__footer {
   display: flex;
   align-items: center;
@@ -81,6 +201,10 @@
   padding: 12px 14px 0;
   border-top: 1px solid var(--color-border);
   margin-top: 12px;
+}
+
+[data-theme="dark"] .nav__footer {
+  border-top-color: rgba(255, 255, 255, 0.06);
 }
 
 .nav__icon-btn {
@@ -99,5 +223,10 @@
 
 .nav__icon-btn:hover {
   background-color: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .nav__icon-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
   color: var(--color-text-primary);
 }

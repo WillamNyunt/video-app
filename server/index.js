@@ -19,6 +19,7 @@ import personVideoRoutes from './src/routes/personVideo.js';
 import attributeSchemaRoutes from './src/routes/attributeSchema.js';
 import searchRoutes from './src/routes/search.js';
 import settingsRoutes from './src/routes/settings.js';
+import personPictureRoutes from './src/routes/personPictures.js';
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/person-video', personVideoRoutes);
 app.use('/api/attribute-schema', attributeSchemaRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/person-pictures', personPictureRoutes);
 
 // Global error handler
 // eslint-disable-next-line no-unused-vars

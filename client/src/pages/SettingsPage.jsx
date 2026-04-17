@@ -75,7 +75,8 @@ function SchemaFormFields({ type, options, onChange }) {
               type="number"
               className="form-input"
               value={step}
-              min={0.01}
+              min={0}
+              step="any"
               onChange={(e) => onChange({ ...options, step: Number(e.target.value) })}
             />
           </div>

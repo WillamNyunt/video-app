@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check /Users/williamn/Documents/video-app/server/src/middleware/upload.js)",
+      "Bash(node --check /Users/williamn/Documents/video-app/server/src/routes/videos.js)"
+    ]
+  }
+}

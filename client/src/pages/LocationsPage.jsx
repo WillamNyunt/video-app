@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Plus, Trash2 } from 'lucide-react';
+import { MapPin, Plus, Trash2, Calendar, Film } from 'lucide-react';
 import { getLocations, createLocation, deleteLocation } from '../api/locations';
 import { getUploadUrl } from '../api/files';
 import { useAuth } from '../context/AuthContext';
@@ -104,7 +104,7 @@ export default function LocationsPage() {
       {locations.length === 0 && !error ? (
         <p className="empty-state">No locations yet. {isAdmin && 'Add one above.'}</p>
       ) : (
-        <div className="card-grid">
+        <div className="location-cards">
           {locations.map((loc) => (
             <div
               key={loc._id}
@@ -124,7 +124,19 @@ export default function LocationsPage() {
                 )}
               </div>
               <div className="location-card__body">
-                <p className="location-card__address">{loc.address}</p>
+                <div className="location-card__text">
+                  <p className="location-card__address">{loc.address}</p>
+                  <div className="location-card__tags">
+                    <span className="tag tag--session">
+                      <Calendar size={11} />
+                      {loc.sessionCount || 0} {loc.sessionCount === 1 ? 'session' : 'sessions'}
+                    </span>
+                    <span className="tag tag--video">
+                      <Film size={11} />
+                      {loc.videoCount || 0} videos
+                    </span>
+                  </div>
+                </div>
                 {isAdmin && (
                   <button
                     className="btn-icon danger location-card__delete"

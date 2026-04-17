@@ -1,3 +1,9 @@
+.location-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
 .location-card {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -5,12 +11,13 @@
   overflow: hidden;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition), border-color var(--transition);
+  transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
 }
 
 .location-card:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--color-accent);
+  transform: translateY(-2px);
 }
 
 .location-card__thumbnail {
@@ -23,11 +30,11 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform var(--transition);
+  transition: transform 0.3s ease;
 }
 
 .location-card:hover .location-card__thumbnail img {
-  transform: scale(1.03);
+  transform: scale(1.04);
 }
 
 .location-card__placeholder {
@@ -37,32 +44,66 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
+  opacity: 0.4;
 }
 
 .location-card__body {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 14px 16px;
+  gap: 8px;
+}
+
+.location-card__text {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
 .location-card__address {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-primary);
-  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin: 0;
+}
+
+.location-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .location-card__delete {
   flex-shrink: 0;
   opacity: 0;
   transition: opacity var(--transition);
+  margin-top: -2px;
 }
 
 .location-card:hover .location-card__delete {
   opacity: 1;
+}
+
+/* ── Dark mode glass ── */
+[data-theme="dark"] .location-card {
+  background: linear-gradient(160deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+[data-theme="dark"] .location-card:hover {
+  background: linear-gradient(160deg, rgba(139,92,246,0.1) 0%, rgba(59,130,246,0.06) 100%);
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3), 0 8px 28px rgba(139, 92, 246, 0.18);
+}
+
+[data-theme="dark"] .location-card__thumbnail {
+  background-color: rgba(255, 255, 255, 0.03);
 }

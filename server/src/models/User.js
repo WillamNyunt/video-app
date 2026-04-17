@@ -17,11 +17,13 @@ const userSchema = new mongoose.Schema(
       enum: ['admin', 'guest'],
       required: true,
     },
+    pictureUrl: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
 
-userSchema.index({ username: 1 }, { unique: true });
 
 const User = mongoose.model('User', userSchema);
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, MapPin, Plus, Trash2, Calendar, Pencil } from 'lucide-react';
+import { ChevronLeft, MapPin, Plus, Trash2, Calendar, Pencil, Film, Clock } from 'lucide-react';
 import { getLocation, updateLocation } from '../api/locations';
 import { getSessions, createSession, deleteSession } from '../api/sessions';
 import { getUploadUrl } from '../api/files';
@@ -32,7 +32,7 @@ export default function LocationDetailPage() {
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [sessionTitle, setSessionTitle] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -59,10 +59,9 @@ export default function LocationDetailPage() {
     e.preventDefault();
     setFormError('');
     if (!date) { setFormError('Date is required.'); return; }
-    if (!time) { setFormError('Time is required.'); return; }
     setSubmitting(true);
     try {
-      const newSession = await createSession({ locationId: id, date, time });
+      const newSession = await createSession({ locationId: id, date, title: sessionTitle });
       setSessions((prev) => [newSession, ...prev]);
       closeModal();
     } catch (err) {
@@ -103,7 +102,7 @@ export default function LocationDetailPage() {
   function closeModal() {
     setShowModal(false);
     setDate('');
-    setTime('');
+    setSessionTitle('');
     setFormError('');
   }
 
@@ -158,6 +157,19 @@ export default function LocationDetailPage() {
       )}
       {pictureError && <p className="error-message" style={{ marginBottom: 16 }}>{pictureError}</p>}
 
+      {sessions.length > 0 && (
+        <div className="location-stats-tags">
+          <span className="tag tag--session">
+            <Calendar size={11} />
+            {sessions.length} {sessions.length === 1 ? 'session' : 'sessions'}
+          </span>
+          <span className="tag tag--video">
+            <Film size={11} />
+            {sessions.reduce((sum, s) => sum + (s.videoCount || 0), 0)} videos
+          </span>
+        </div>
+      )}
+
       <div className="page-header" style={{ marginTop: 28 }}>
         <h2 className="section-title">Sessions ({sessions.length})</h2>
         {isAdmin && (
@@ -183,10 +195,24 @@ export default function LocationDetailPage() {
               tabIndex={0}
               onKeyDown={(e) => e.key === 'Enter' && navigate(`/sessions/${s._id}`)}
             >
-              <Calendar size={16} className="session-row__icon" />
-              <div className="session-row__info">
+              <div className="session-row__main">
                 <span className="session-row__date">{formatDate(s.date)}</span>
-                <span className="session-row__time">{s.time}</span>
+                {s.title && <span className="session-row__title">{s.title}</span>}
+                <div className="session-row__tags">
+                  {(s.earliestTimestamp || s.latestTimestamp) && (
+                    <span className="tag tag--time">
+                      <Clock size={10} />
+                      {s.earliestTimestamp}
+                      {s.latestTimestamp && s.latestTimestamp !== s.earliestTimestamp
+                        ? ` – ${s.latestTimestamp}`
+                        : ''}
+                    </span>
+                  )}
+                  <span className="tag tag--video">
+                    <Film size={10} />
+                    {s.videoCount || 0} videos
+                  </span>
+                </div>
               </div>
               {isAdmin && (
                 <button
@@ -209,7 +235,18 @@ export default function LocationDetailPage() {
             <h2 className="modal-title">Add Session</h2>
             {formError && <p className="error-message" style={{ marginBottom: 16 }}>{formError}</p>}
             <form onSubmit={handleCreate}>
-              <div className="form-group" style={{ marginBottom: 14 }}>
+              <div className="form-group" style={{ marginBottom: 16 }}>
+                <label className="form-label">Title</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Morning session"
+                  value={sessionTitle}
+                  onChange={(e) => setSessionTitle(e.target.value)}
+                  disabled={submitting}
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: 4 }}>
                 <label className="form-label">Date *</label>
                 <input
                   type="date"
@@ -218,16 +255,6 @@ export default function LocationDetailPage() {
                   onChange={(e) => setDate(e.target.value)}
                   disabled={submitting}
                   autoFocus
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: 4 }}>
-                <label className="form-label">Time *</label>
-                <input
-                  type="time"
-                  className="form-input"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  disabled={submitting}
                 />
               </div>
               <div className="modal-actions">

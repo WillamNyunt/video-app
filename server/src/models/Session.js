@@ -11,9 +11,14 @@ const sessionSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    time: {
+    title: {
       type: String,
-      required: true,
+      default: '',
+      trim: true,
+    },
+    notes: {
+      type: String,
+      default: '',
     },
   },
   { timestamps: true }

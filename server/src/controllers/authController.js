@@ -1,3 +1,4 @@
+import path from 'path';
 import * as authService from '../services/authService.js';
 
 const COOKIE_OPTIONS = {
@@ -29,6 +30,22 @@ export function logout(req, res) {
 export async function me(req, res, next) {
   try {
     const user = await authService.getMe(req.user.id);
+    return res.json(user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateProfilePicture(req, res, next) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    const relativePath = path.relative(
+      path.resolve(process.env.STORAGE_PATH || './uploads'),
+      req.file.path
+    ).replace(/\\/g, '/');
+    const user = await authService.updateUserPicture(req.user.id, relativePath);
     return res.json(user);
   } catch (err) {
     next(err);

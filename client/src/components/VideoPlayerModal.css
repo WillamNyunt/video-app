@@ -1,13 +1,8 @@
 .vplayer-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.95);
+  background-color: #000;
   z-index: 200;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
 }
 
 .vplayer-counter {
@@ -17,14 +12,14 @@
   color: #fff;
   font-size: 14px;
   font-weight: 500;
-  opacity: 0.8;
+  opacity: 0.7;
   z-index: 201;
   pointer-events: none;
 }
 
 .vplayer-close {
   position: fixed;
-  top: 10px;
+  top: 12px;
   right: 14px;
   background-color: rgba(255, 255, 255, 0.15);
   border: none;
@@ -45,32 +40,11 @@
 }
 
 .vplayer-slide {
-  height: 82vh;
-  aspect-ratio: 9 / 16;
-  position: relative;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
-  border-radius: 12px;
-  background-color: #000;
-  flex-shrink: 0;
 }
 
-.vplayer-slide--next {
-  animation: slideInFromBottom 0.3s ease;
-}
-
-.vplayer-slide--prev {
-  animation: slideInFromTop 0.3s ease;
-}
-
-@keyframes slideInFromBottom {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
-}
-
-@keyframes slideInFromTop {
-  from { transform: translateY(-100%); }
-  to   { transform: translateY(0); }
-}
 
 .vplayer-video {
   width: 100%;
@@ -84,18 +58,48 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 40%;
+  height: 35%;
   background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.85));
   pointer-events: none;
 }
 
+.vplayer-people {
+  position: absolute;
+  bottom: 52px;
+  left: 20px;
+  right: 80px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.vplayer-person-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  text-decoration: none;
+  backdrop-filter: blur(4px);
+  transition: background-color 0.15s ease;
+}
+
+.vplayer-person-chip:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
 .vplayer-title {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
+  bottom: 20px;
+  left: 20px;
+  right: 80px;
   color: #fff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.4;
   margin: 0;
@@ -107,25 +111,31 @@
 }
 
 .vplayer-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
   background-color: rgba(255, 255, 255, 0.15);
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   cursor: pointer;
+  z-index: 201;
   transition: background-color 0.15s ease, opacity 0.15s ease;
-  flex-shrink: 0;
 }
+
+.vplayer-nav--left  { left: 16px; }
+.vplayer-nav--right { right: 16px; }
 
 .vplayer-nav:hover:not(:disabled) {
   background-color: rgba(255, 255, 255, 0.3);
 }
 
 .vplayer-nav:disabled {
-  opacity: 0.25;
+  opacity: 0.2;
   cursor: default;
 }

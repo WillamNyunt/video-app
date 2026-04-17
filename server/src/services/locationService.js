@@ -1,7 +1,39 @@
 import Location from '../models/Location.js';
 
 export async function getAllLocations() {
-  return Location.find().sort({ createdAt: -1 });
+  return Location.aggregate([
+    {
+      $lookup: {
+        from: 'sessions',
+        localField: '_id',
+        foreignField: 'locationId',
+        as: '_sessions',
+      },
+    },
+    {
+      $addFields: {
+        sessionCount: { $size: '$_sessions' },
+        _sessionIds: '$_sessions._id',
+      },
+    },
+    {
+      $lookup: {
+        from: 'videos',
+        let: { sessionIds: '$_sessionIds' },
+        pipeline: [
+          { $match: { $expr: { $in: ['$sessionId', '$$sessionIds'] } } },
+        ],
+        as: '_videos',
+      },
+    },
+    {
+      $addFields: { videoCount: { $size: '$_videos' } },
+    },
+    {
+      $project: { _sessions: 0, _sessionIds: 0, _videos: 0 },
+    },
+    { $sort: { createdAt: -1 } },
+  ]);
 }
 
 export async function getLocationById(id) {

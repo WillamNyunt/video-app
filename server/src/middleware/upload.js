@@ -52,6 +52,12 @@ export const uploadLocationImages = multer({
   storage: makeStorage('location-images'),
 });
 
+// Admin profile picture uploads
+export const uploadAvatar = multer({
+  storage: makeStorage('avatars'),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
 /**
  * Build a relative path to store in DB from an uploaded file.
  * e.g. file.path = "/abs/path/uploads/videos/abc.mp4"
@@ -62,3 +68,8 @@ export function relativeStoragePath(file) {
   const storagePath = path.resolve(process.env.STORAGE_PATH || './uploads');
   return path.relative(storagePath, file.path);
 }
+
+export const uploadPersonPictures = multer({
+  storage: makeStorage(() => dateSubdir('person-pictures')),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});

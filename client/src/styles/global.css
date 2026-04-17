@@ -30,11 +30,26 @@
    Dark Theme
    ========================================= */
 [data-theme="dark"] {
-  --color-bg: #0f0f0f;
-  --color-surface: #1a1a1a;
-  --color-border: #2a2a2a;
-  --color-text-primary: #f0f0f0;
-  --color-text-secondary: #999999;
+  --color-bg: #08080f;
+  --color-surface: #0f0f1a;
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-text-primary: #eeeef5;
+  --color-text-secondary: #8888aa;
+  --color-accent: #8b5cf6;
+  --color-accent-hover: #7c3aed;
+
+  /* Glass */
+  --color-glass: rgba(255, 255, 255, 0.04);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 24px rgba(139, 92, 246, 0.18);
+
+  /* Gradients */
+  --gradient-accent: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+  --gradient-accent-subtle: linear-gradient(135deg, rgba(139, 92, 246, 0.18) 0%, rgba(59, 130, 246, 0.18) 100%);
+  --gradient-accent-text: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%);
+  --gradient-surface: linear-gradient(160deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
 }
 
 /* =========================================
@@ -364,4 +379,130 @@ ol {
   background-color: var(--color-surface);
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
+}
+
+/* =========================================
+   Dark mode — glass morphism & gradients
+   ========================================= */
+[data-theme="dark"] .page-content {
+  background: radial-gradient(ellipse 80% 60% at 60% 0%, rgba(99, 53, 210, 0.18) 0%, transparent 70%),
+              radial-gradient(ellipse 60% 50% at 10% 80%, rgba(37, 99, 235, 0.12) 0%, transparent 60%),
+              var(--color-bg);
+}
+
+[data-theme="dark"] .modal {
+  background-color: rgba(20, 20, 28, 0.85);
+  backdrop-filter: blur(20px);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .tag--session {
+  background: linear-gradient(135deg, rgba(99, 53, 210, 0.25), rgba(37, 99, 235, 0.25));
+  color: #a78bfa;
+  border-color: rgba(167, 139, 250, 0.3);
+}
+
+[data-theme="dark"] .tag--video {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(22, 163, 74, 0.2));
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+[data-theme="dark"] .tag--time {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-secondary);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.tag {
+  border: 1px solid transparent;
+}
+
+[data-theme="dark"] .btn-primary {
+  background: var(--gradient-accent);
+  border: none;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background: var(--gradient-accent-hover);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.45);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: var(--color-glass);
+  border-color: var(--color-glass-border);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #a78bfa;
+}
+
+[data-theme="dark"] .badge {
+  background: var(--color-glass);
+  border-color: var(--color-glass-border);
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-textarea {
+  background: var(--color-glass);
+  border-color: var(--color-glass-border);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] .form-textarea:focus {
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
+
+[data-theme="dark"] .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+[data-theme="dark"] .spinner {
+  border-color: rgba(255, 255, 255, 0.1);
+  border-top-color: #8b5cf6;
+}
+
+[data-theme="dark"] .tag--time {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-secondary);
+}
+
+/* =========================================
+   Tag pills
+   ========================================= */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.tag--session {
+  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+}
+
+.tag--video {
+  background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+  color: var(--color-success);
+}
+
+.tag--time {
+  background-color: color-mix(in srgb, var(--color-text-secondary) 10%, transparent);
+  color: var(--color-text-secondary);
 }

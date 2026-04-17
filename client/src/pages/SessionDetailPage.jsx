@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, Plus, Search, ArrowUpDown } from 'lucide-react';
-import { getSession } from '../api/sessions';
-import { getVideos, createVideo, deleteVideo } from '../api/videos';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ChevronLeft, Plus, Search, ArrowUpDown, Pencil } from 'lucide-react';
+import { getSession, updateSession } from '../api/sessions';
+import { getVideos, deleteVideo } from '../api/videos';
 import { getPeople } from '../api/people';
 import { useAuth } from '../context/AuthContext';
 import VideoCard from '../components/VideoCard';
 import VideoPlayerModal from '../components/VideoPlayerModal';
+import VideoEditModal from '../components/VideoEditModal';
 import './SessionDetailPage.css';
 
 function formatDate(dateStr) {
@@ -25,11 +26,12 @@ const SORT_OPTIONS = [
 
 function parseFilename(filename) {
   const base = filename.replace(/\.[^.]+$/, '');
-  const timeMatch = base.match(/_(\d{1,2}:\d{2}(?::\d{2})?)$/);
+  // Accept HH:MM, HH.MM, or HH-MM (and optional :SS/.SS/-SS) at end of name
+  const timeMatch = base.match(/_(\d{1,2}[:.\-]\d{2}(?:[:.\-]\d{2})?)$/);
   let timestamp = '';
   let title = base;
   if (timeMatch) {
-    timestamp = timeMatch[1];
+    timestamp = timeMatch[1].replace(/[.\-]/g, ':');
     title = base.slice(0, base.length - timeMatch[0].length);
   }
   title = title.replace(/_/g, ' ').trim();
@@ -38,12 +40,14 @@ function parseFilename(filename) {
 
 export default function SessionDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
   const [session, setSession] = useState(null);
   const [videos, setVideos] = useState([]);
   const [personVideoMap, setPersonVideoMap] = useState({});
+  const [allPeople, setAllPeople] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -51,14 +55,14 @@ export default function SessionDetailPage() {
   const [sortBy, setSortBy] = useState('timestamp');
   const [sortAsc, setSortAsc] = useState(true);
 
-  const [showUpload, setShowUpload] = useState(false);
-  const [uploadItems, setUploadItems] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(null);
-  const [uploadError, setUploadError] = useState('');
-
   const [deleteError, setDeleteError] = useState('');
   const [playerIndex, setPlayerIndex] = useState(null);
+  const [editingVideo, setEditingVideo] = useState(null);
+
+  const [notes, setNotes] = useState('');
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesError, setNotesError] = useState('');
 
   useEffect(() => { fetchData(); }, [id]);
 
@@ -72,7 +76,9 @@ export default function SessionDetailPage() {
         getPeople(),
       ]);
       setSession(sess);
+      setNotes(sess.notes || '');
       setVideos(vids);
+      setAllPeople(people);
       const pmap = {};
       people.forEach((p) => { pmap[p._id] = p; });
       setPersonVideoMap(pmap);
@@ -80,6 +86,26 @@ export default function SessionDetailPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleVideoSaved(updated) {
+    setVideos((prev) => prev.map((v) => (v._id === updated._id ? updated : v)));
+    setEditingVideo(null);
+  }
+
+  async function handleSaveNotes() {
+    setSavingNotes(true);
+    setNotesError('');
+    try {
+      const updated = await updateSession(id, { notes });
+      setSession(updated);
+      setNotes(updated.notes || '');
+      setEditingNotes(false);
+    } catch (err) {
+      setNotesError(err.message);
+    } finally {
+      setSavingNotes(false);
     }
   }
 
@@ -128,79 +154,6 @@ export default function SessionDetailPage() {
     else { setSortBy(field); setSortAsc(true); }
   }
 
-  function handleFilesSelected(e) {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    const items = files.map((file) => {
-      const { title, timestamp } = parseFilename(file.name);
-      return { file, title, timestamp, thumbnailFile: null, error: null };
-    });
-    setUploadItems(items);
-    setUploadError('');
-    e.target.value = '';
-  }
-
-  function updateItem(index, field, value) {
-    setUploadItems((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], [field]: value };
-      return next;
-    });
-  }
-
-  async function handleUploadAll(e) {
-    e.preventDefault();
-    setUploadError('');
-
-    const missing = uploadItems.findIndex((item) => !item.title.trim() || !item.thumbnailFile);
-    if (missing !== -1) {
-      setUploadError(`Item ${missing + 1}: title and thumbnail are required for all videos.`);
-      return;
-    }
-
-    setUploading(true);
-    const results = [];
-
-    for (let i = 0; i < uploadItems.length; i++) {
-      setUploadProgress({ current: i + 1, total: uploadItems.length });
-      const item = uploadItems[i];
-      try {
-        const fd = new FormData();
-        fd.append('sessionId', id);
-        fd.append('title', item.title.trim());
-        if (item.timestamp.trim()) fd.append('timestamp', item.timestamp.trim());
-        fd.append('video', item.file);
-        fd.append('thumbnail', item.thumbnailFile);
-        const newVideo = await createVideo(fd);
-        results.push({ ok: true, video: newVideo });
-        setVideos((prev) => [newVideo, ...prev]);
-        // Mark item as done
-        setUploadItems((prev) => {
-          const next = [...prev];
-          next[i] = { ...next[i], error: null, done: true };
-          return next;
-        });
-      } catch (err) {
-        results.push({ ok: false, error: err.message });
-        setUploadItems((prev) => {
-          const next = [...prev];
-          next[i] = { ...next[i], error: err.message };
-          return next;
-        });
-      }
-    }
-
-    setUploading(false);
-    setUploadProgress(null);
-
-    const failed = results.filter((r) => !r.ok).length;
-    if (failed === 0) {
-      closeUpload();
-    } else {
-      setUploadError(`${failed} of ${results.length} uploads failed. See items above.`);
-    }
-  }
-
   async function handleDelete(videoId) {
     setDeleteError('');
     if (!confirm('Delete this video?')) return;
@@ -210,14 +163,6 @@ export default function SessionDetailPage() {
     } catch (err) {
       setDeleteError(err.message);
     }
-  }
-
-  function closeUpload() {
-    setShowUpload(false);
-    setUploadItems([]);
-    setUploading(false);
-    setUploadProgress(null);
-    setUploadError('');
   }
 
   if (loading) return <div className="spinner" aria-label="Loading" />;
@@ -238,10 +183,50 @@ export default function SessionDetailPage() {
       {session && (
         <div className="session-detail-header">
           <h1 className="page-title">
-            {formatDate(session.date)} — {session.time}
+            {session.title ? session.title : formatDate(session.date)}
           </h1>
+          {session.title && (
+            <p className="session-detail-date">{formatDate(session.date)}</p>
+          )}
         </div>
       )}
+
+      <div className="session-notes">
+        <div className="session-notes__header">
+          <span className="session-notes__label">Notes</span>
+          {isAdmin && !editingNotes && (
+            <button className="btn btn-ghost session-notes__edit-btn" onClick={() => setEditingNotes(true)}>
+              <Pencil size={13} />
+              {notes ? 'Edit' : 'Add'}
+            </button>
+          )}
+        </div>
+        {notesError && <p className="error-message" style={{ marginBottom: 8 }}>{notesError}</p>}
+        {editingNotes ? (
+          <div className="session-notes__editor">
+            <textarea
+              className="form-input session-notes__textarea"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add session notes…"
+              rows={4}
+              disabled={savingNotes}
+            />
+            <div className="session-notes__actions">
+              <button className="btn btn-secondary" onClick={() => { setEditingNotes(false); setNotes(session.notes || ''); }} disabled={savingNotes}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleSaveNotes} disabled={savingNotes}>
+                {savingNotes ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        ) : notes ? (
+          <p className="session-notes__text">{notes}</p>
+        ) : (
+          !isAdmin && <p className="session-notes__empty">No notes.</p>
+        )}
+      </div>
 
       <div className="session-controls">
         <div className="session-search">
@@ -272,7 +257,7 @@ export default function SessionDetailPage() {
         </div>
 
         {isAdmin && (
-          <button className="btn btn-primary" onClick={() => setShowUpload(true)}>
+          <button className="btn btn-primary" onClick={() => navigate(`/sessions/${id}/upload`)}>
             <Plus size={16} />
             Upload Videos
           </button>
@@ -296,6 +281,7 @@ export default function SessionDetailPage() {
               isAdmin={isAdmin}
               onDelete={handleDelete}
               onClick={() => setPlayerIndex(i)}
+              onEdit={isAdmin ? setEditingVideo : undefined}
             />
           ))}
         </div>
@@ -305,102 +291,20 @@ export default function SessionDetailPage() {
         <VideoPlayerModal
           videos={filteredVideos}
           startIndex={playerIndex}
+          personVideoMap={personVideoMap}
           onClose={() => setPlayerIndex(null)}
         />
       )}
 
-      {showUpload && (
-        <div className="modal-overlay" onClick={!uploading ? closeUpload : undefined}>
-          <div className="modal upload-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">Upload Videos</h2>
-
-            {uploadItems.length === 0 ? (
-              <div className="upload-drop-area">
-                <p className="upload-drop-hint">Select one or more video files</p>
-                <label className="btn btn-primary upload-file-label">
-                  Choose Files
-                  <input
-                    type="file"
-                    accept="video/*"
-                    multiple
-                    style={{ display: 'none' }}
-                    onChange={handleFilesSelected}
-                  />
-                </label>
-              </div>
-            ) : (
-              <form onSubmit={handleUploadAll}>
-                {uploadError && (
-                  <p className="error-message" style={{ marginBottom: 16 }}>{uploadError}</p>
-                )}
-
-                <div className="upload-items-list">
-                  {uploadItems.map((item, i) => (
-                    <div
-                      key={i}
-                      className={`upload-item${item.done ? ' upload-item--done' : ''}${item.error ? ' upload-item--error' : ''}`}
-                    >
-                      <p className="upload-item__filename">{item.file.name}</p>
-                      {item.error && (
-                        <p className="upload-item__error">{item.error}</p>
-                      )}
-                      <div className="upload-item__fields">
-                        <div className="form-group">
-                          <label className="form-label">Title *</label>
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={item.title}
-                            onChange={(e) => updateItem(i, 'title', e.target.value)}
-                            disabled={uploading || item.done}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Timestamp</label>
-                          <input
-                            type="text"
-                            className="form-input"
-                            placeholder="HH:MM"
-                            value={item.timestamp}
-                            onChange={(e) => updateItem(i, 'timestamp', e.target.value)}
-                            disabled={uploading || item.done}
-                          />
-                        </div>
-                        <div className="form-group upload-item__thumb">
-                          <label className="form-label">Thumbnail *</label>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="form-input"
-                            onChange={(e) => updateItem(i, 'thumbnailFile', e.target.files[0] || null)}
-                            disabled={uploading || item.done}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="modal-actions">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={closeUpload}
-                    disabled={uploading}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={uploading}>
-                    {uploading
-                      ? `Uploading ${uploadProgress?.current} / ${uploadProgress?.total}...`
-                      : `Upload ${uploadItems.length} Video${uploadItems.length !== 1 ? 's' : ''}`}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
+      {editingVideo && (
+        <VideoEditModal
+          video={editingVideo}
+          allPeople={allPeople}
+          onSave={handleVideoSaved}
+          onClose={() => setEditingVideo(null)}
+        />
       )}
+
     </div>
   );
 }

@@ -20,11 +20,11 @@ export async function getOne(req, res, next) {
 
 export async function create(req, res, next) {
   try {
-    const { locationId, date, time } = req.body;
-    if (!locationId || !date || !time) {
-      return res.status(400).json({ error: 'locationId, date, and time are required' });
+    const { locationId, date, title } = req.body;
+    if (!locationId || !date) {
+      return res.status(400).json({ error: 'locationId and date are required' });
     }
-    const session = await sessionService.createSession({ locationId, date, time });
+    const session = await sessionService.createSession({ locationId, date, title });
     return res.status(201).json(session);
   } catch (err) {
     next(err);

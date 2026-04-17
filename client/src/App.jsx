@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import LocationsPage from './pages/LocationsPage';
 import LocationDetailPage from './pages/LocationDetailPage';
 import SessionDetailPage from './pages/SessionDetailPage';
+import UploadPage from './pages/UploadPage';
 import PeoplePage from './pages/PeoplePage';
 import PersonDetailPage from './pages/PersonDetailPage';
 import SearchPage from './pages/SearchPage';
@@ -61,6 +62,7 @@ function AppShell() {
                   <Route index element={<LocationsPage />} />
                   <Route path="locations/:id" element={<LocationDetailPage />} />
                   <Route path="sessions/:id" element={<SessionDetailPage />} />
+                  <Route path="sessions/:id/upload" element={<UploadPage />} />
                   <Route path="people" element={<PeoplePage />} />
                   <Route path="people/:id" element={<PersonDetailPage />} />
                   <Route path="search" element={<SearchPage />} />

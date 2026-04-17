@@ -29,3 +29,13 @@ export async function getMe(userId) {
   }
   return user;
 }
+
+export async function updateUserPicture(userId, pictureUrl) {
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { pictureUrl },
+    { new: true }
+  ).select('-passwordHash');
+  if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
+  return user;
+}

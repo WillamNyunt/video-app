@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, UserCircle, Edit2, Check, X, CheckSquare, Square } from 'lucide-react';
+import { ChevronLeft, UserCircle, Edit2, Check, X, CheckSquare, Square, ImagePlus, Trash2 } from 'lucide-react';
 import { getPerson, getPersonVideos, updatePerson } from '../api/people';
 import { getSchema } from '../api/attributeSchema';
 import { useAuth } from '../context/AuthContext';
+import { getPersonPictures, uploadPersonPictures, deletePersonPicture } from '../api/personPictures';
+import { getUploadUrl } from '../api/files';
 import VideoCard from '../components/VideoCard';
+import PictureLightbox from '../components/PictureLightbox';
 import './PersonDetailPage.css';
 
 function AttributeDisplay({ schema, value }) {
@@ -113,6 +116,14 @@ export default function PersonDetailPage() {
   const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const [activeTab, setActiveTab] = useState('videos');
+  const [pictures, setPictures] = useState([]);
+  const [picturesLoading, setPicturesLoading] = useState(false);
+  const [pictureError, setPictureError] = useState('');
+  const [pictureUploading, setPictureUploading] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+  const pictureInputRef = useRef(null);
+
   useEffect(() => {
     fetchData();
   }, [id]);
@@ -168,6 +179,54 @@ export default function PersonDetailPage() {
 
   function setAttr(key, value) {
     setEditAttrs((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function loadPictures() {
+    if (pictures.length > 0) return;
+    setPicturesLoading(true);
+    setPictureError('');
+    try {
+      const data = await getPersonPictures(id);
+      setPictures(data);
+    } catch (err) {
+      setPictureError(err.message);
+    } finally {
+      setPicturesLoading(false);
+    }
+  }
+
+  function handleTabChange(tab) {
+    setActiveTab(tab);
+    if (tab === 'pictures') loadPictures();
+  }
+
+  async function handlePictureUpload(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setPictureUploading(true);
+    setPictureError('');
+    try {
+      const fd = new FormData();
+      fd.append('personId', id);
+      files.forEach((f) => fd.append('pictures', f));
+      const created = await uploadPersonPictures(fd);
+      setPictures((prev) => [...created, ...prev]);
+    } catch (err) {
+      setPictureError(err.message);
+    } finally {
+      setPictureUploading(false);
+      e.target.value = '';
+    }
+  }
+
+  async function handlePictureDelete(picId) {
+    if (!confirm('Delete this picture?')) return;
+    try {
+      await deletePersonPicture(picId);
+      setPictures((prev) => prev.filter((p) => p._id !== picId));
+    } catch (err) {
+      setPictureError(err.message);
+    }
   }
 
   if (loading) return <div className="spinner" aria-label="Loading" />;
@@ -251,21 +310,103 @@ export default function PersonDetailPage() {
         </div>
       )}
 
-      {/* Videos */}
-      <div className="person-videos">
-        <h2 className="section-title" style={{ marginBottom: 16 }}>
+      {/* Tabs */}
+      <div className="person-tabs">
+        <button
+          className={`person-tab${activeTab === 'videos' ? ' person-tab--active' : ''}`}
+          onClick={() => handleTabChange('videos')}
+        >
           Videos ({videos.length})
-        </h2>
-        {videos.length === 0 ? (
-          <p className="empty-state">This person does not appear in any videos.</p>
-        ) : (
-          <div className="card-grid">
-            {videos.map((v) => (
-              <VideoCard key={v._id} video={v} isAdmin={false} />
-            ))}
-          </div>
-        )}
+        </button>
+        <button
+          className={`person-tab${activeTab === 'pictures' ? ' person-tab--active' : ''}`}
+          onClick={() => handleTabChange('pictures')}
+        >
+          Pictures {pictures.length > 0 ? `(${pictures.length})` : ''}
+        </button>
       </div>
+
+      {activeTab === 'videos' && (
+        <div className="person-tab-content">
+          {videos.length === 0 ? (
+            <p className="empty-state">This person does not appear in any videos.</p>
+          ) : (
+            <div className="card-grid">
+              {videos.map((v) => (
+                <VideoCard key={v._id} video={v} isAdmin={false} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'pictures' && (
+        <div className="person-tab-content">
+          {isAdmin && (
+            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => pictureInputRef.current?.click()}
+                disabled={pictureUploading}
+              >
+                <ImagePlus size={16} />
+                {pictureUploading ? 'Uploading…' : 'Add Photos'}
+              </button>
+              <input
+                ref={pictureInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={handlePictureUpload}
+              />
+            </div>
+          )}
+          {pictureError && <p className="error-message" style={{ marginBottom: 12 }}>{pictureError}</p>}
+          {picturesLoading ? (
+            <div className="spinner" aria-label="Loading" />
+          ) : pictures.length === 0 ? (
+            <p className="empty-state">No pictures yet.{isAdmin ? ' Add some above.' : ''}</p>
+          ) : (
+            <div className="picture-grid">
+              {pictures.map((pic, i) => (
+                <div
+                  key={pic._id}
+                  className="picture-cell"
+                  onClick={() => setLightboxIndex(i)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View picture ${i + 1}`}
+                  onKeyDown={(e) => e.key === 'Enter' && setLightboxIndex(i)}
+                >
+                  <img
+                    src={getUploadUrl(pic.url)}
+                    alt=""
+                    className="picture-cell__img"
+                  />
+                  {isAdmin && (
+                    <button
+                      className="picture-cell__delete"
+                      onClick={(e) => { e.stopPropagation(); handlePictureDelete(pic._id); }}
+                      aria-label="Delete picture"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {lightboxIndex !== null && (
+        <PictureLightbox
+          pictures={pictures}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </div>
   );
 }

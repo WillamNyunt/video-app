@@ -1,8 +1,41 @@
+import mongoose from 'mongoose';
 import Session from '../models/Session.js';
 
 export async function getAllSessions(locationId) {
-  const query = locationId ? { locationId } : {};
-  return Session.find(query).sort({ date: -1, time: -1 });
+  const match = locationId
+    ? { locationId: new mongoose.Types.ObjectId(locationId) }
+    : {};
+
+  return Session.aggregate([
+    { $match: match },
+    {
+      $lookup: {
+        from: 'videos',
+        localField: '_id',
+        foreignField: 'sessionId',
+        as: 'videos',
+      },
+    },
+    {
+      $addFields: {
+        videoCount: { $size: '$videos' },
+        _timestamps: {
+          $filter: {
+            input: '$videos.timestamp',
+            cond: { $and: [{ $ne: ['$$this', null] }, { $ne: ['$$this', ''] }] },
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        earliestTimestamp: { $min: '$_timestamps' },
+        latestTimestamp: { $max: '$_timestamps' },
+      },
+    },
+    { $project: { videos: 0, _timestamps: 0 } },
+    { $sort: { date: -1 } },
+  ]);
 }
 
 export async function getSessionById(id) {
@@ -13,8 +46,11 @@ export async function getSessionById(id) {
   return session;
 }
 
-export async function createSession(data) {
-  return Session.create(data);
+export async function createSession({ locationId, date, notes, title }) {
+  if (!locationId || !date) {
+    throw Object.assign(new Error('locationId and date are required'), { status: 400 });
+  }
+  return Session.create({ locationId, date, notes, title });
 }
 
 export async function updateSession(id, data) {

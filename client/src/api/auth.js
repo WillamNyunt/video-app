@@ -37,3 +37,16 @@ export async function me() {
   }
   return res.json();
 }
+
+export async function updateProfilePicture(formData) {
+  const res = await fetch('/api/auth/me/picture', {
+    method: 'PUT',
+    credentials: 'include',
+    body: formData,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to update profile picture');
+  }
+  return res.json();
+}
