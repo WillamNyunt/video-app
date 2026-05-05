@@ -34,6 +34,7 @@ export async function getAllLocations() {
     },
     { $sort: { createdAt: -1 } },
   ]);
+  return Location.decryptDocs(results);
 }
 
 export async function getLocationById(id) {

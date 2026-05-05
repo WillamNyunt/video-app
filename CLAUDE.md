@@ -9,6 +9,7 @@ Read SPEC.md for full requirements before doing anything.
 - Backend: Node.js, Express, Mongoose, Multer, bcrypt, jsonwebtoken
 - DB: MongoDB via Mongoose. URI from MONGO_URI env var (default: mongodb://localhost:27017/videoarchive)
 - Auth: JWT in httpOnly cookie
+- Encryption: AES-256-CTR (files) + AES-256-GCM (DB text fields) via ENCRYPTION_KEY env var
 
 ## Repo Structure
 ```
@@ -28,12 +29,13 @@ Read SPEC.md for full requirements before doing anything.
 ├── server/
 │   ├── src/
 │   │   ├── models/          ← Mongoose schemas
+│   │   ├── plugins/         ← encryptFields.js Mongoose plugin
 │   │   ├── routes/          ← Express routers
 │   │   ├── middleware/      ← auth, error handler
 │   │   ├── controllers/     ← route handlers (thin, logic in services)
-│   │   ├── services/        ← business logic
+│   │   ├── services/        ← business logic (cryptoService.js lives here)
 │   │   └── seed.js          ← admin + settings seed
-│   ├── uploads/             ← gitignored, file storage
+│   ├── uploads/             ← gitignored, file storage (all video files AES-256-CTR encrypted)
 │   └── index.js             ← entry point
 └── .claude/
     └── agents/
@@ -48,6 +50,9 @@ Read SPEC.md for full requirements before doing anything.
 - Theme is stored in AppSettings collection and loaded on app init. Apply as data-theme on <html>.
 - FE search/filter on session video list is client-side only (no API call).
 - CSS uses custom properties from global.css — never hardcode hex colors in component CSS.
+- NEVER log, print, or expose ENCRYPTION_KEY or any decrypted video data in server output or error messages.
+- Video files on disk are AES-256-CTR encrypted — never serve them via res.sendFile() or static middleware; always use streamDecryptedFile().
+- To add encrypted fields to a new model: apply encryptedFieldsPlugin with the field list. For aggregate queries on that model, call Model.decryptDocs() on results manually.
 
 ## Naming Conventions
 - React components: PascalCase files, e.g. VideoCard.jsx

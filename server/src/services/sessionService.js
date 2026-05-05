@@ -6,7 +6,7 @@ export async function getAllSessions(locationId) {
     ? { locationId: new mongoose.Types.ObjectId(locationId) }
     : {};
 
-  return Session.aggregate([
+  const results = await Session.aggregate([
     { $match: match },
     {
       $lookup: {
@@ -36,6 +36,7 @@ export async function getAllSessions(locationId) {
     { $project: { videos: 0, _timestamps: 0 } },
     { $sort: { date: -1 } },
   ]);
+  return Session.decryptDocs(results);
 }
 
 export async function getSessionById(id) {

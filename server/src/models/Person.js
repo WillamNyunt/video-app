@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { encryptedFieldsPlugin } from '../plugins/encryptFields.js';
 
 const personSchema = new mongoose.Schema(
   {
@@ -14,6 +15,8 @@ const personSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+personSchema.plugin(encryptedFieldsPlugin, { fields: ['name'] });
 
 personSchema.index({ name: 1 });
 

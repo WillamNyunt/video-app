@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { encryptedFieldsPlugin } from '../plugins/encryptFields.js';
 
 const videoSchema = new mongoose.Schema(
   {
@@ -31,6 +32,8 @@ const videoSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+videoSchema.plugin(encryptedFieldsPlugin, { fields: ['title'] });
 
 videoSchema.index({ sessionId: 1 });
 

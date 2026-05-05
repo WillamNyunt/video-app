@@ -6,7 +6,7 @@ import PersonVideo from '../models/PersonVideo.js';
 
 export async function getAllVideos(sessionId) {
   if (sessionId) {
-    return Video.aggregate([
+    const results = await Video.aggregate([
       { $match: { sessionId: new mongoose.Types.ObjectId(sessionId) } },
       {
         $lookup: {
@@ -24,6 +24,8 @@ export async function getAllVideos(sessionId) {
       { $project: { personVideoLinks: 0 } },
       { $sort: { createdAt: -1 } },
     ]);
+    // Aggregate bypasses Mongoose middleware, so decrypt manually
+    return Video.decryptDocs(results);
   }
   return Video.find({}).sort({ createdAt: -1 });
 }

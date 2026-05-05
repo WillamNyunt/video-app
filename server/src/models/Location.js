@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { encryptedFieldsPlugin } from '../plugins/encryptFields.js';
 
 const locationSchema = new mongoose.Schema(
   {
@@ -16,6 +17,8 @@ const locationSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+locationSchema.plugin(encryptedFieldsPlugin, { fields: ['address'] });
 
 const Location = mongoose.model('Location', locationSchema);
 

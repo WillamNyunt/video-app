@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { encryptedFieldsPlugin } from '../plugins/encryptFields.js';
 
 const personAttributeSchemaSchema = new mongoose.Schema(
   {
@@ -24,6 +25,8 @@ const personAttributeSchemaSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+personAttributeSchemaSchema.plugin(encryptedFieldsPlugin, { fields: ['label'] });
 
 const PersonAttributeSchema = mongoose.model('PersonAttributeSchema', personAttributeSchemaSchema);
 

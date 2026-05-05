@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { encryptedFieldsPlugin } from '../plugins/encryptFields.js';
 
 const sessionSchema = new mongoose.Schema(
   {
@@ -23,6 +24,8 @@ const sessionSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+sessionSchema.plugin(encryptedFieldsPlugin, { fields: ['title', 'notes'] });
 
 sessionSchema.index({ locationId: 1 });
 

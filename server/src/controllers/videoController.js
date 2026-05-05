@@ -1,5 +1,6 @@
 import * as videoService from '../services/videoService.js';
 import { relativeStoragePath } from '../middleware/upload.js';
+import { encryptFileInPlace, streamDecryptedFile } from '../services/cryptoService.js';
 import PersonVideo from '../models/PersonVideo.js';
 
 export async function getAll(req, res, next) {
@@ -47,6 +48,10 @@ export async function create(req, res, next) {
 
     const video = await videoService.createVideo(data);
 
+    // Encrypt the video file on disk now that the DB record is saved
+    const absoluteVideoPath = videoService.resolveVideoFilePath(data.filePath);
+    await encryptFileInPlace(absoluteVideoPath);
+
     if (personIds) {
       try {
         const ids = JSON.parse(personIds);
@@ -74,6 +79,13 @@ export async function update(req, res, next) {
     }
 
     const video = await videoService.updateVideo(req.params.id, data);
+
+    // Encrypt the replacement video file if one was uploaded
+    if (req.files?.video?.[0]) {
+      const absoluteVideoPath = videoService.resolveVideoFilePath(data.filePath);
+      await encryptFileInPlace(absoluteVideoPath);
+    }
+
     return res.json(video);
   } catch (err) {
     next(err);
@@ -93,7 +105,7 @@ export async function serveFile(req, res, next) {
   try {
     const video = await videoService.getVideoById(req.params.id);
     const absolutePath = videoService.resolveVideoFilePath(video.filePath);
-    return res.sendFile(absolutePath);
+    streamDecryptedFile(absolutePath, req, res);
   } catch (err) {
     next(err);
   }

@@ -22,7 +22,10 @@ STORAGE_PATH=./uploads
 PORT=5000
 SEED_ADMIN_USERNAME=admin
 SEED_ADMIN_PASSWORD=changeme
+ENCRYPTION_KEY=<64 hex chars>   # generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
+
+`ENCRYPTION_KEY` is required. Never commit it to git. Losing it makes all encrypted data permanently inaccessible.
 
 ---
 
@@ -58,28 +61,34 @@ createdAt: Date
 ```
 locationId: ObjectId → Location (required)
 date: Date (required)
-time: String (required, e.g. "14:30")
+title: String                        ← AES-256-GCM encrypted at rest in DB
+notes: String                        ← AES-256-GCM encrypted at rest in DB
 createdAt: Date
 ```
 
 ### `Video`
 ```
 sessionId: ObjectId → Session (required)
-title: String (required)
+title: String (required)             ← AES-256-GCM encrypted at rest in DB
 filePath: String (required, local path)
 thumbnailUrl: String (stored path)
-timestamp: String (manually entered, e.g. "00:04:32")
-fileSizeBytes: Number
+timestamp: String (e.g. "00:04:32") ← plaintext (used in session aggregate $min/$max)
+fileSizeBytes: Number                ← plaintext (original file size, pre-encryption)
 durationSeconds: Number
 createdAt: Date
 ```
+`title` is transparently decrypted by `encryptedFieldsPlugin` on read.
+The video file on disk is AES-256-CTR encrypted (16-byte IV prepended). `fileSizeBytes` stores the
+original plaintext size; the on-disk file is 16 bytes larger.
 
 ### `Person`
 ```
-name: String (required)
+name: String (required)              ← AES-256-GCM encrypted at rest in DB
 attributes: Mixed (key-value, schema defined by PersonAttributeSchema)
 createdAt: Date
 ```
+Note: encrypting `name` disables server-side name search (can't regex-match ciphertext in MongoDB).
+Search must be handled client-side for this model.
 
 ### `PersonVideo` (join collection)
 ```
@@ -142,7 +151,7 @@ GET    /api/videos/:id
 POST   /api/videos             [admin] multipart: file + { sessionId, title, timestamp }, file: thumbnail
 PUT    /api/videos/:id         [admin]
 DELETE /api/videos/:id         [admin]
-GET    /api/videos/:id/file    → serves static file (pipe from disk)
+GET    /api/videos/:id/file    → decrypts and streams video; supports Range requests for scrubbing
 ```
 
 ### People
@@ -275,8 +284,20 @@ PUT    /api/settings           [admin] body: { key, value }
 - Videos and images stored under `STORAGE_PATH` env var
 - Subdirectories: `uploads/videos/`, `uploads/thumbnails/`, `uploads/location-images/`
 - Multer used for multipart upload handling on Express
-- Video file served via `res.sendFile()` with correct `Content-Type`
-- No streaming (range requests not required)
+
+### Encryption at rest
+- **Video files**: AES-256-CTR. After Multer writes the plaintext file, `encryptFileInPlace()` reads it,
+  prepends a 16-byte random IV, writes ciphertext to a `.enc` temp file, then atomically replaces the original.
+- **DB text fields** (`title`, `timestamp`): AES-256-GCM with random 12-byte nonce. Stored as base64
+  `nonce[12] + authTag[16] + ciphertext` in MongoDB. Decrypted transparently by `encryptedFieldsPlugin`.
+- **Key**: `ENCRYPTION_KEY` from `.env` (32 bytes / 64 hex chars). Single key for both algorithms.
+- **Implementation**: `server/src/services/cryptoService.js`, `server/src/plugins/encryptFields.js`
+
+### Video serving
+- `GET /api/videos/:id/file` decrypts on-the-fly via `streamDecryptedFile()`
+- Supports HTTP Range requests: seeks to the correct AES-CTR block offset so scrubbing works without
+  decrypting from the start of the file
+- MIME type inferred from file extension
 
 ---
 
@@ -306,7 +327,6 @@ On server start (or via `npm run seed`):
 ---
 
 ## Non-Goals (explicitly out of scope)
-- Video streaming / range requests
 - User registration UI
 - Email / notifications
 - Multi-tenancy
