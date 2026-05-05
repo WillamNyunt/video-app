@@ -1,5 +1,11 @@
+import path from 'path';
 import * as locationService from '../services/locationService.js';
 import { relativeStoragePath } from '../middleware/upload.js';
+import { encryptFileInPlace } from '../services/cryptoService.js';
+
+function resolveUpload(relativePath) {
+  return path.resolve(process.env.STORAGE_PATH || './uploads', relativePath);
+}
 
 export async function getAll(req, res, next) {
   try {
@@ -35,6 +41,15 @@ export async function create(req, res, next) {
     }
 
     const location = await locationService.createLocation(data);
+
+    try {
+      if (data.pictureUrl)   await encryptFileInPlace(resolveUpload(data.pictureUrl));
+      if (data.thumbnailUrl) await encryptFileInPlace(resolveUpload(data.thumbnailUrl));
+    } catch (encErr) {
+      console.error('[location] file encrypt failed:', encErr);
+      throw encErr;
+    }
+
     return res.status(201).json(location);
   } catch (err) {
     next(err);
@@ -52,6 +67,15 @@ export async function update(req, res, next) {
     }
 
     const location = await locationService.updateLocation(req.params.id, data);
+
+    try {
+      if (req.files?.picture?.[0])   await encryptFileInPlace(resolveUpload(data.pictureUrl));
+      if (req.files?.thumbnail?.[0]) await encryptFileInPlace(resolveUpload(data.thumbnailUrl));
+    } catch (encErr) {
+      console.error('[location] file encrypt failed:', encErr);
+      throw encErr;
+    }
+
     return res.json(location);
   } catch (err) {
     next(err);

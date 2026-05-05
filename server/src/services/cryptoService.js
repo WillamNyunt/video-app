@@ -155,8 +155,10 @@ export function streamDecryptedFile(filePath, req, res) {
       'Content-Type': contentType,
       'Accept-Ranges': 'bytes',
     });
-    fs.createReadStream(filePath, { start: CTR_IV_SIZE })
-      .pipe(crypto.createDecipheriv('aes-256-ctr', key, iv))
-      .pipe(res);
+    const fileStream = fs.createReadStream(filePath, { start: CTR_IV_SIZE });
+    const decipher = crypto.createDecipheriv('aes-256-ctr', key, iv);
+    fileStream.on('error', () => { if (!res.writableEnded) res.end(); });
+    decipher.on('error', () => { if (!res.writableEnded) res.end(); });
+    fileStream.pipe(decipher).pipe(res);
   }
 }

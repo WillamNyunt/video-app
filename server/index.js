@@ -1,6 +1,6 @@
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { dirname, resolve, join, normalize } from 'path';
 config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '../.env') });
 import express from 'express';
 import mongoose from 'mongoose';
@@ -8,6 +8,14 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
 import { seed } from './src/seed.js';
+import { streamDecryptedFile } from './src/services/cryptoService.js';
+
+process.on('uncaughtException', (err) => {
+  console.error('[server] UNCAUGHT EXCEPTION:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[server] UNHANDLED REJECTION:', reason);
+});
 
 import { authMiddleware } from './src/middleware/auth.js';
 import authRoutes from './src/routes/auth.js';
@@ -31,9 +39,18 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 
-// Auth-gated static file serving for uploads (thumbnails, location images, etc.)
+// Auth-gated encrypted file serving for uploads (thumbnails, location images, etc.)
 const uploadsPath = resolve(process.env.STORAGE_PATH || './uploads');
-app.use('/api/uploads', authMiddleware, express.static(uploadsPath));
+app.use('/api/uploads', authMiddleware, (req, res, next) => {
+  try {
+    const safePath = normalize(decodeURIComponent(req.path)).replace(/^(\.\.[/\\])+/, '');
+    const absolutePath = join(uploadsPath, safePath);
+    if (!absolutePath.startsWith(uploadsPath)) return res.status(403).end();
+    streamDecryptedFile(absolutePath, req, res);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Routes
 app.use('/api/auth', authRoutes);

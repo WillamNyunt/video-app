@@ -1,6 +1,7 @@
 import path from 'path';
 import * as service from '../services/personPictureService.js';
 import { relativeStoragePath } from '../middleware/upload.js';
+import { encryptFileInPlace } from '../services/cryptoService.js';
 
 export async function list(req, res, next) {
   try {
@@ -22,6 +23,9 @@ export async function create(req, res, next) {
     const created = await Promise.all(
       req.files.map((file) => service.createPicture(personId, relativeStoragePath(file)))
     );
+
+    await Promise.all(req.files.map((file) => encryptFileInPlace(file.path)));
+
     return res.status(201).json(created);
   } catch (err) {
     next(err);

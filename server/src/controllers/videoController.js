@@ -48,9 +48,12 @@ export async function create(req, res, next) {
 
     const video = await videoService.createVideo(data);
 
-    // Encrypt the video file on disk now that the DB record is saved
+    // Encrypt video file and thumbnail on disk now that the DB record is saved
     const absoluteVideoPath = videoService.resolveVideoFilePath(data.filePath);
     await encryptFileInPlace(absoluteVideoPath);
+    if (data.thumbnailUrl) {
+      await encryptFileInPlace(videoService.resolveUploadPath(data.thumbnailUrl));
+    }
 
     if (personIds) {
       try {
@@ -80,10 +83,12 @@ export async function update(req, res, next) {
 
     const video = await videoService.updateVideo(req.params.id, data);
 
-    // Encrypt the replacement video file if one was uploaded
+    // Encrypt any replacement files that were uploaded
     if (req.files?.video?.[0]) {
-      const absoluteVideoPath = videoService.resolveVideoFilePath(data.filePath);
-      await encryptFileInPlace(absoluteVideoPath);
+      await encryptFileInPlace(videoService.resolveVideoFilePath(data.filePath));
+    }
+    if (req.files?.thumbnail?.[0]) {
+      await encryptFileInPlace(videoService.resolveUploadPath(data.thumbnailUrl));
     }
 
     return res.json(video);

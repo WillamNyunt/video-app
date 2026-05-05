@@ -72,3 +72,7 @@ export function resolveVideoFilePath(filePath) {
   }
   return resolved;
 }
+
+export function resolveUploadPath(relativePath) {
+  return path.resolve(process.env.STORAGE_PATH || './uploads', relativePath);
+}

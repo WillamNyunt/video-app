@@ -1,7 +1,7 @@
 import Location from '../models/Location.js';
 
 export async function getAllLocations() {
-  return Location.aggregate([
+  const results = await Location.aggregate([
     {
       $lookup: {
         from: 'sessions',

@@ -1,5 +1,6 @@
 import path from 'path';
 import * as authService from '../services/authService.js';
+import { encryptFileInPlace } from '../services/cryptoService.js';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -45,6 +46,7 @@ export async function updateProfilePicture(req, res, next) {
       path.resolve(process.env.STORAGE_PATH || './uploads'),
       req.file.path
     ).replace(/\\/g, '/');
+    await encryptFileInPlace(req.file.path);
     const user = await authService.updateUserPicture(req.user.id, relativePath);
     return res.json(user);
   } catch (err) {
