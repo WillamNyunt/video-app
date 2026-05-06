@@ -115,8 +115,8 @@ export default function LocationsPage() {
               onKeyDown={(e) => e.key === 'Enter' && navigate(`/locations/${loc._id}`)}
             >
               <div className="location-card__thumbnail">
-                {getUploadUrl(loc.thumbnailUrl) ? (
-                  <img src={getUploadUrl(loc.thumbnailUrl)} alt={loc.address} />
+                {getUploadUrl(loc.thumbnailUrl || loc.pictureUrl) ? (
+                  <img src={getUploadUrl(loc.thumbnailUrl || loc.pictureUrl)} alt={loc.address} />
                 ) : (
                   <div className="location-card__placeholder">
                     <MapPin size={28} />

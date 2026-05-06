@@ -90,6 +90,7 @@ export default function LocationDetailPage() {
     try {
       const fd = new FormData();
       fd.append('picture', file);
+      fd.append('thumbnail', file);
       const updated = await updateLocation(id, fd);
       setLocation(updated);
     } catch (err) {
@@ -121,9 +122,9 @@ export default function LocationDetailPage() {
       {location && (
         <div className="location-detail-header">
           <div className="location-detail-picture">
-            {getUploadUrl(location.pictureUrl) ? (
+            {getUploadUrl(location.pictureUrl || location.thumbnailUrl) ? (
               <img
-                src={getUploadUrl(location.pictureUrl)}
+                src={getUploadUrl(location.pictureUrl || location.thumbnailUrl)}
                 alt={location.address}
                 className="location-detail-image"
               />
