@@ -66,3 +66,16 @@ export async function deletePerson(id) {
   }
   return res.json();
 }
+
+export async function updatePersonProfilePic(id, formData) {
+  const res = await fetch(`${BASE}/${id}/profile-pic`, {
+    method: 'PUT',
+    credentials: 'include',
+    body: formData,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || 'Failed to update profile picture');
+  }
+  return res.json();
+}

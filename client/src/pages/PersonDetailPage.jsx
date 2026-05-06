@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, UserCircle, Edit2, Check, X, CheckSquare, Square, ImagePlus, Trash2 } from 'lucide-react';
-import { getPerson, getPersonVideos, updatePerson } from '../api/people';
+import { ChevronLeft, UserCircle, Edit2, Check, X, CheckSquare, Square, ImagePlus, Trash2, Pencil } from 'lucide-react';
+import { getPerson, getPersonVideos, updatePerson, updatePersonProfilePic } from '../api/people';
 import { getSchema } from '../api/attributeSchema';
 import { useAuth } from '../context/AuthContext';
 import { getPersonPictures, uploadPersonPictures, deletePersonPicture } from '../api/personPictures';
@@ -123,6 +123,8 @@ export default function PersonDetailPage() {
   const [pictureUploading, setPictureUploading] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const pictureInputRef = useRef(null);
+  const profilePicInputRef = useRef(null);
+  const [profilePicError, setProfilePicError] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -219,6 +221,22 @@ export default function PersonDetailPage() {
     }
   }
 
+  async function handleProfilePicChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setProfilePicError('');
+    try {
+      const fd = new FormData();
+      fd.append('profilePic', file);
+      const updated = await updatePersonProfilePic(id, fd);
+      setPerson(updated);
+    } catch (err) {
+      setProfilePicError(err.message);
+    } finally {
+      e.target.value = '';
+    }
+  }
+
   async function handlePictureDelete(picId) {
     if (!confirm('Delete this picture?')) return;
     try {
@@ -244,7 +262,33 @@ export default function PersonDetailPage() {
 
       <div className="person-detail-header">
         <div className="person-detail-avatar">
-          <UserCircle size={56} />
+          {getUploadUrl(person.profilePicUrl) ? (
+            <img
+              src={getUploadUrl(person.profilePicUrl)}
+              alt={person.name}
+              className="person-detail-avatar__img"
+            />
+          ) : (
+            <div className="person-detail-avatar__placeholder">
+              <UserCircle size={56} />
+            </div>
+          )}
+          {isAdmin && (
+            <button
+              className="person-detail-avatar__edit"
+              onClick={() => profilePicInputRef.current?.click()}
+              title="Change profile picture"
+            >
+              <Pencil size={13} />
+            </button>
+          )}
+          <input
+            ref={profilePicInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleProfilePicChange}
+          />
         </div>
         <div className="person-detail-info">
           {editing ? (
@@ -281,6 +325,7 @@ export default function PersonDetailPage() {
       </div>
 
       {saveError && <p className="error-message" style={{ marginBottom: 16 }}>{saveError}</p>}
+      {profilePicError && <p className="error-message" style={{ marginBottom: 16 }}>{profilePicError}</p>}
 
       {/* Attributes */}
       {schema.length > 0 && (

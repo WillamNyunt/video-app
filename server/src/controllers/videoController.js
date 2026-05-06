@@ -1,7 +1,7 @@
 import * as videoService from '../services/videoService.js';
 import { relativeStoragePath } from '../middleware/upload.js';
 import { encryptFileInPlace, streamDecryptedFile } from '../services/cryptoService.js';
-import PersonVideo from '../models/PersonVideo.js';
+import { linkPersonVideo } from '../services/personVideoService.js';
 
 export async function getAll(req, res, next) {
   try {
@@ -58,7 +58,7 @@ export async function create(req, res, next) {
     if (personIds) {
       try {
         const ids = JSON.parse(personIds);
-        await Promise.all(ids.map((pid) => PersonVideo.create({ personId: pid, videoId: video._id })));
+        await Promise.all(ids.map((pid) => linkPersonVideo(pid, video._id)));
       } catch {
         // non-fatal: video created, link failed
       }

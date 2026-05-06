@@ -58,6 +58,17 @@ export async function deleteVideo(id) {
   if (!video) {
     throw Object.assign(new Error('Video not found'), { status: 404 });
   }
+
+  await PersonVideo.deleteMany({ videoId: id });
+
+  const storagePath = process.env.STORAGE_PATH || './uploads';
+  if (video.filePath) {
+    try { fs.unlinkSync(path.resolve(storagePath, video.filePath)); } catch { /* already gone */ }
+  }
+  if (video.thumbnailUrl) {
+    try { fs.unlinkSync(path.resolve(storagePath, video.thumbnailUrl)); } catch { /* already gone */ }
+  }
+
   return video;
 }
 

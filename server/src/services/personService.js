@@ -29,6 +29,10 @@ export async function updatePerson(id, data) {
   return person;
 }
 
+export async function setProfilePic(id, url) {
+  return Person.findByIdAndUpdate(id, { profilePicUrl: url }, { new: true });
+}
+
 export async function deletePerson(id) {
   const person = await Person.findByIdAndDelete(id);
   if (!person) {

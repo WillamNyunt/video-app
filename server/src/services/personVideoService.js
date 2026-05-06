@@ -19,6 +19,12 @@ export async function linkPersonVideo(personId, videoId) {
     { personId, videoId },
     { upsert: true, new: true }
   );
+
+  // Auto-assign profile pic from the video's thumbnail if the person has none
+  if (!person.profilePicUrl && video.thumbnailUrl) {
+    await Person.findByIdAndUpdate(personId, { profilePicUrl: video.thumbnailUrl });
+  }
+
   return link;
 }
 

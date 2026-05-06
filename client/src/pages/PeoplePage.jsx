@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Plus, Trash2, UserCircle } from 'lucide-react';
 import { getPeople, createPerson, deletePerson } from '../api/people';
 import { useAuth } from '../context/AuthContext';
+import { getUploadUrl } from '../api/files';
 import './PeoplePage.css';
 
 export default function PeoplePage() {
@@ -105,7 +106,15 @@ export default function PeoplePage() {
               onKeyDown={(e) => e.key === 'Enter' && navigate(`/people/${person._id}`)}
             >
               <div className="person-card__avatar">
-                <UserCircle size={40} />
+                {getUploadUrl(person.profilePicUrl) ? (
+                  <img
+                    src={getUploadUrl(person.profilePicUrl)}
+                    alt={person.name}
+                    className="person-card__avatar-img"
+                  />
+                ) : (
+                  <UserCircle size={40} />
+                )}
               </div>
               <div className="person-card__body">
                 <p className="person-card__name">{person.name}</p>

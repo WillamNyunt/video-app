@@ -12,6 +12,9 @@ const personSchema = new mongoose.Schema(
     attributes: {
       type: mongoose.Schema.Types.Mixed,
     },
+    profilePicUrl: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
