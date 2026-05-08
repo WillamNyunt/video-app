@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Session from '../models/Session.js';
+import Video from '../models/Video.js';
 
 export async function getAllSessions(locationId) {
   const match = locationId
@@ -66,6 +67,13 @@ export async function updateSession(id, data) {
 }
 
 export async function deleteSession(id) {
+  const videoCount = await Video.countDocuments({ sessionId: id });
+  if (videoCount > 0) {
+    throw Object.assign(
+      new Error(`Cannot delete session: ${videoCount} video${videoCount === 1 ? '' : 's'} must be removed first`),
+      { status: 409 }
+    );
+  }
   const session = await Session.findByIdAndDelete(id);
   if (!session) {
     throw Object.assign(new Error('Session not found'), { status: 404 });

@@ -4,7 +4,7 @@ import { updateSetting } from '../api/settings';
 import { getSchema, createSchema, updateSchema, deleteSchema } from '../api/attributeSchema';
 import './SettingsPage.css';
 
-const SCHEMA_TYPES = ['dropdown', 'checkbox', 'slider'];
+const SCHEMA_TYPES = ['dropdown', 'checkbox', 'slider', 'text', 'richtext'];
 
 function SchemaFormFields({ type, options, onChange }) {
   if (type === 'dropdown') {
@@ -251,7 +251,7 @@ export default function SettingsPage() {
           </button>
         </div>
         <p className="settings-hint" style={{ marginBottom: 16 }}>
-          Define the dynamic attributes that people can have. Types: dropdown, checkbox, slider.
+          Define the dynamic attributes that people can have. Types: dropdown, checkbox, slider, text, richtext.
         </p>
 
         {schemaError && <p className="error-message">{schemaError}</p>}

@@ -65,7 +65,7 @@ export default function LocationsPage() {
   async function handleDelete(e, id) {
     e.stopPropagation();
     setDeleteError('');
-    if (!confirm('Delete this location and all its sessions?')) return;
+    if (!confirm('Delete this location? It must have no sessions.')) return;
     try {
       await deleteLocation(id);
       setLocations((prev) => prev.filter((l) => l._id !== id));

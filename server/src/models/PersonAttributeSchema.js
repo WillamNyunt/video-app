@@ -10,7 +10,7 @@ const personAttributeSchemaSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['dropdown', 'checkbox', 'slider'],
+      enum: ['dropdown', 'checkbox', 'slider', 'text', 'richtext'],
       required: true,
     },
     options: {

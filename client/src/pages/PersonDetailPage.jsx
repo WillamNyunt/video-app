@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, UserCircle, Edit2, Check, X, CheckSquare, Square, ImagePlus, Trash2, Pencil } from 'lucide-react';
+import { ChevronLeft, UserCircle, X, CheckSquare, Square, ImagePlus, Trash2, Pencil } from 'lucide-react';
 import { getPerson, getPersonVideos, updatePerson, updatePersonProfilePic } from '../api/people';
 import { getSchema } from '../api/attributeSchema';
 import { useAuth } from '../context/AuthContext';
 import { getPersonPictures, uploadPersonPictures, deletePersonPicture } from '../api/personPictures';
 import { getUploadUrl } from '../api/files';
 import VideoCard from '../components/VideoCard';
+import VideoPlayerModal from '../components/VideoPlayerModal';
 import PictureLightbox from '../components/PictureLightbox';
 import './PersonDetailPage.css';
 
@@ -25,6 +26,14 @@ function AttributeDisplay({ schema, value }) {
 
   if (schema.type === 'dropdown') {
     return <span className="badge">{value}</span>;
+  }
+
+  if (schema.type === 'text') {
+    return <span className="attr-text-display">{String(value)}</span>;
+  }
+
+  if (schema.type === 'richtext') {
+    return <span className="attr-richtext-display">{String(value)}</span>;
   }
 
   if (schema.type === 'slider') {
@@ -53,6 +62,7 @@ function AttributeEditor({ schema, value, onChange }) {
       <label className="attr-edit-checkbox">
         <input
           type="checkbox"
+          data-field={schema.label}
           checked={!!value}
           onChange={(e) => onChange(e.target.checked)}
         />
@@ -66,6 +76,7 @@ function AttributeEditor({ schema, value, onChange }) {
     return (
       <select
         className="form-select"
+        data-field={schema.label}
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
       >
@@ -77,6 +88,32 @@ function AttributeEditor({ schema, value, onChange }) {
     );
   }
 
+  if (schema.type === 'text') {
+    return (
+      <input
+        type="text"
+        className="form-input"
+        data-field={schema.label}
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="—"
+      />
+    );
+  }
+
+  if (schema.type === 'richtext') {
+    return (
+      <textarea
+        className="form-input form-textarea attr-richtext-editor"
+        data-field={schema.label}
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="—"
+        rows={4}
+      />
+    );
+  }
+
   if (schema.type === 'slider') {
     const min = schema.options?.min ?? 0;
     const max = schema.options?.max ?? 100;
@@ -85,6 +122,7 @@ function AttributeEditor({ schema, value, onChange }) {
       <div className="attr-edit-slider">
         <input
           type="range"
+          data-field={schema.label}
           min={min}
           max={max}
           step={step}
@@ -122,9 +160,13 @@ export default function PersonDetailPage() {
   const [pictureError, setPictureError] = useState('');
   const [pictureUploading, setPictureUploading] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [playerIndex, setPlayerIndex] = useState(null);
   const pictureInputRef = useRef(null);
   const profilePicInputRef = useRef(null);
   const [profilePicError, setProfilePicError] = useState('');
+  const editContainerRef = useRef(null);
+  const blurTimerRef = useRef(null);
+  const focusFieldRef = useRef(null);
 
   useEffect(() => {
     fetchData();
@@ -149,16 +191,38 @@ export default function PersonDetailPage() {
     }
   }
 
-  function startEdit() {
+  function startEdit(field = 'name') {
+    if (editing) return;
+    focusFieldRef.current = field;
     setEditName(person.name);
     setEditAttrs(person.attributes ? { ...person.attributes } : {});
     setSaveError('');
     setEditing(true);
   }
 
+  useEffect(() => {
+    if (!editing || !focusFieldRef.current) return;
+    const el = editContainerRef.current?.querySelector(`[data-field="${focusFieldRef.current}"]`);
+    el?.focus();
+    focusFieldRef.current = null;
+  }, [editing]);
+
   function cancelEdit() {
     setEditing(false);
     setSaveError('');
+  }
+
+  function handleContainerBlur() {
+    if (!editing) return;
+    blurTimerRef.current = setTimeout(() => {
+      if (!editContainerRef.current?.contains(document.activeElement)) {
+        handleSave();
+      }
+    }, 0);
+  }
+
+  function handleContainerFocusIn() {
+    clearTimeout(blurTimerRef.current);
   }
 
   async function handleSave() {
@@ -260,100 +324,107 @@ export default function PersonDetailPage() {
         </Link>
       </div>
 
-      <div className="person-detail-header">
-        <div className="person-detail-avatar">
-          {getUploadUrl(person.profilePicUrl) ? (
-            <img
-              src={getUploadUrl(person.profilePicUrl)}
-              alt={person.name}
-              className="person-detail-avatar__img"
+      <div
+        ref={editContainerRef}
+        onBlur={handleContainerBlur}
+        onFocus={handleContainerFocusIn}
+      >
+        <div className="person-detail-header">
+          <div className="person-detail-avatar">
+            {getUploadUrl(person.profilePicUrl) ? (
+              <img
+                src={getUploadUrl(person.profilePicUrl)}
+                alt={person.name}
+                className="person-detail-avatar__img"
+              />
+            ) : (
+              <div className="person-detail-avatar__placeholder">
+                <UserCircle size={56} />
+              </div>
+            )}
+            {isAdmin && (
+              <button
+                className="person-detail-avatar__edit"
+                onClick={() => profilePicInputRef.current?.click()}
+                title="Change profile picture"
+              >
+                <Pencil size={13} />
+              </button>
+            )}
+            <input
+              ref={profilePicInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleProfilePicChange}
             />
-          ) : (
-            <div className="person-detail-avatar__placeholder">
-              <UserCircle size={56} />
+          </div>
+          <div className="person-detail-info">
+            {editing ? (
+              <input
+                type="text"
+                data-field="name"
+                className="form-input person-name-input"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                disabled={saving}
+              />
+            ) : (
+              <h1
+                className={`page-title${isAdmin ? ' person-name-clickable' : ''}`}
+                onClick={isAdmin ? () => startEdit('name') : undefined}
+                title={isAdmin ? 'Click to edit' : undefined}
+              >
+                {person.name}
+              </h1>
+            )}
+          </div>
+          {isAdmin && editing && (
+            <div className="person-edit-actions">
+              <button className="btn btn-secondary" onClick={cancelEdit} disabled={saving}>
+                <X size={14} />
+                Cancel
+              </button>
+              {saving && <span className="person-saving-indicator">Saving…</span>}
             </div>
           )}
-          {isAdmin && (
-            <button
-              className="person-detail-avatar__edit"
-              onClick={() => profilePicInputRef.current?.click()}
-              title="Change profile picture"
-            >
-              <Pencil size={13} />
-            </button>
-          )}
-          <input
-            ref={profilePicInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleProfilePicChange}
-          />
         </div>
-        <div className="person-detail-info">
-          {editing ? (
-            <input
-              type="text"
-              className="form-input person-name-input"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              disabled={saving}
-              autoFocus
-            />
-          ) : (
-            <h1 className="page-title">{person.name}</h1>
-          )}
-        </div>
-        {isAdmin && !editing && (
-          <button className="btn btn-secondary" onClick={startEdit}>
-            <Edit2 size={14} />
-            Edit
-          </button>
-        )}
-        {isAdmin && editing && (
-          <div className="person-edit-actions">
-            <button className="btn btn-secondary" onClick={cancelEdit} disabled={saving}>
-              <X size={14} />
-              Cancel
-            </button>
-            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-              <Check size={14} />
-              {saving ? 'Saving...' : 'Save'}
-            </button>
+
+        {saveError && <p className="error-message" style={{ marginBottom: 16 }}>{saveError}</p>}
+        {profilePicError && <p className="error-message" style={{ marginBottom: 16 }}>{profilePicError}</p>}
+
+        {/* Attributes */}
+        {schema.length > 0 && (
+          <div className="person-attrs">
+            <h2 className="section-title" style={{ marginBottom: 14 }}>Attributes</h2>
+            <div className="person-attrs-grid">
+              {schema.map((s) => (
+                <div
+                  key={s._id}
+                  className={`attr-row${isAdmin && !editing ? ' attr-row--clickable' : ''}`}
+                  onClick={isAdmin && !editing ? () => startEdit(s.label) : undefined}
+                >
+                  <span className="attr-label">{s.label}</span>
+                  <div className="attr-value">
+                    {editing ? (
+                      <AttributeEditor
+                        schema={s}
+                        value={editAttrs[s.label]}
+                        onChange={(v) => setAttr(s.label, v)}
+                      />
+                    ) : (
+                      <AttributeDisplay
+                        schema={s}
+                        value={person.attributes?.[s.label]}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
-
-      {saveError && <p className="error-message" style={{ marginBottom: 16 }}>{saveError}</p>}
-      {profilePicError && <p className="error-message" style={{ marginBottom: 16 }}>{profilePicError}</p>}
-
-      {/* Attributes */}
-      {schema.length > 0 && (
-        <div className="person-attrs">
-          <h2 className="section-title" style={{ marginBottom: 14 }}>Attributes</h2>
-          <div className="person-attrs-grid">
-            {schema.map((s) => (
-              <div key={s._id} className="attr-row">
-                <span className="attr-label">{s.label}</span>
-                <div className="attr-value">
-                  {editing ? (
-                    <AttributeEditor
-                      schema={s}
-                      value={editAttrs[s.label]}
-                      onChange={(v) => setAttr(s.label, v)}
-                    />
-                  ) : (
-                    <AttributeDisplay
-                      schema={s}
-                      value={person.attributes?.[s.label]}
-                    />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Tabs */}
       <div className="person-tabs">
@@ -377,8 +448,8 @@ export default function PersonDetailPage() {
             <p className="empty-state">This person does not appear in any videos.</p>
           ) : (
             <div className="card-grid">
-              {videos.map((v) => (
-                <VideoCard key={v._id} video={v} isAdmin={false} />
+              {videos.map((v, i) => (
+                <VideoCard key={v._id} video={v} isAdmin={false} onClick={() => setPlayerIndex(i)} />
               ))}
             </div>
           )}
@@ -443,6 +514,14 @@ export default function PersonDetailPage() {
             </div>
           )}
         </div>
+      )}
+
+      {playerIndex !== null && (
+        <VideoPlayerModal
+          videos={videos}
+          startIndex={playerIndex}
+          onClose={() => setPlayerIndex(null)}
+        />
       )}
 
       {lightboxIndex !== null && (

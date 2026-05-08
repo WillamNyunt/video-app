@@ -8,6 +8,60 @@ import { createPerson } from '../api/people';
 import { createVideo } from '../api/videos';
 import './UploadPage.css';
 
+function captureFrame(video, time) {
+  return new Promise((resolve, reject) => {
+    const onSeeked = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Frame capture failed'));
+        }, 'image/jpeg', 0.85);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    video.addEventListener('seeked', onSeeked, { once: true });
+    video.currentTime = time;
+  });
+}
+
+async function generateThumbnails(file, count = 5) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.src = url;
+    video.addEventListener('loadedmetadata', async () => {
+      const duration = video.duration;
+      if (!duration || !isFinite(duration)) {
+        URL.revokeObjectURL(url);
+        resolve([]);
+        return;
+      }
+      const results = [];
+      for (let i = 0; i < count; i++) {
+        const time = (duration / (count + 1)) * (i + 1);
+        try {
+          const blob = await captureFrame(video, time);
+          results.push({ blob, preview: URL.createObjectURL(blob) });
+        } catch { /* skip failed frame */ }
+      }
+      URL.revokeObjectURL(url);
+      resolve(results);
+    }, { once: true });
+    video.addEventListener('error', () => {
+      URL.revokeObjectURL(url);
+      resolve([]);
+    }, { once: true });
+    video.load();
+  });
+}
+
 function parseFilename(filename) {
   const base = filename.replace(/\.[^.]+$/, '');
   const timeMatch = base.match(/_(\d{1,2}[:.\-]\d{2}(?:[:.\-]\d{2})?)$/);
@@ -66,6 +120,32 @@ function AttributeCell({ schema, value, onChange, disabled }) {
       </select>
     );
   }
+  if (schema.type === 'text') {
+    return (
+      <input
+        type="text"
+        className="form-input upload-input"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        placeholder="—"
+      />
+    );
+  }
+
+  if (schema.type === 'richtext') {
+    return (
+      <textarea
+        className="form-input upload-input upload-attr-richtext"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        placeholder="—"
+        rows={2}
+      />
+    );
+  }
+
   if (schema.type === 'slider') {
     const min = schema.options?.min ?? 0;
     const max = schema.options?.max ?? 100;
@@ -132,7 +212,6 @@ export default function UploadPage() {
 
   function buildRow(file) {
     const { title, timestamp } = parseFilename(file.name);
-    const attributes = {};
     return {
       id: `${file.name}-${Date.now()}-${Math.random()}`,
       file,
@@ -140,8 +219,10 @@ export default function UploadPage() {
       timestamp,
       thumbnailFile: null,
       thumbnailPreview: null,
-      attributes,
-      status: 'pending', // pending | uploading | done | error
+      thumbnails: [],
+      thumbnailsLoading: true,
+      attributes: {},
+      status: 'pending',
       error: null,
     };
   }
@@ -149,7 +230,9 @@ export default function UploadPage() {
   function addFiles(files) {
     const videoFiles = Array.from(files).filter((f) => f.type.startsWith('video/'));
     if (!videoFiles.length) return;
-    setRows((prev) => [...prev, ...videoFiles.map(buildRow)]);
+    const newRows = videoFiles.map(buildRow);
+    setRows((prev) => [...prev, ...newRows]);
+    newRows.forEach((row) => generateRowThumbnails(row.id, row.file));
   }
 
   function handleFileInput(e) {
@@ -184,6 +267,19 @@ export default function UploadPage() {
     ));
   }
 
+  async function generateRowThumbnails(rowId, file) {
+    const thumbs = await generateThumbnails(file);
+    setRows((prev) => prev.map((r) =>
+      r.id === rowId ? { ...r, thumbnails: thumbs, thumbnailsLoading: false } : r
+    ));
+  }
+
+  function selectThumbnail(id, thumb) {
+    setRows((prev) => prev.map((r) =>
+      r.id === id ? { ...r, thumbnailFile: thumb.blob, thumbnailPreview: thumb.preview } : r
+    ));
+  }
+
   function handleThumbnail(id, file) {
     const preview = file ? URL.createObjectURL(file) : null;
     setRows((prev) => prev.map((r) =>
@@ -192,7 +288,11 @@ export default function UploadPage() {
   }
 
   function removeRow(id) {
-    setRows((prev) => prev.filter((r) => r.id !== id));
+    setRows((prev) => {
+      const row = prev.find((r) => r.id === id);
+      if (row?.thumbnails) row.thumbnails.forEach((t) => URL.revokeObjectURL(t.preview));
+      return prev.filter((r) => r.id !== id);
+    });
   }
 
   async function handleSubmit(e) {
@@ -378,7 +478,41 @@ export default function UploadPage() {
                         />
                       </td>
                       <td className="upload-td upload-td--thumb">
-                        {row.thumbnailPreview ? (
+                        {row.thumbnailsLoading ? (
+                          <div className="upload-thumb-generating">
+                            <Loader size={13} className="upload-status-spin" />
+                            <span>Generating…</span>
+                          </div>
+                        ) : row.thumbnails.length > 0 ? (
+                          <div className="upload-thumb-filmstrip">
+                            {row.thumbnails.map((t, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                className={`upload-thumb-frame${row.thumbnailPreview === t.preview ? ' upload-thumb-frame--selected' : ''}`}
+                                onClick={() => !disabled && selectThumbnail(row.id, t)}
+                                disabled={disabled}
+                                title={`Frame ${i + 1}`}
+                              >
+                                <img src={t.preview} alt={`Frame ${i + 1}`} />
+                                {row.thumbnailPreview === t.preview && <span className="upload-thumb-check">✓</span>}
+                              </button>
+                            ))}
+                            <label
+                              className={`upload-thumb-custom${disabled ? ' upload-thumb-custom--disabled' : ''}`}
+                              title="Upload custom image"
+                            >
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleThumbnail(row.id, e.target.files[0] || null)}
+                                disabled={disabled}
+                              />
+                              +
+                            </label>
+                          </div>
+                        ) : row.thumbnailPreview ? (
                           <div className="upload-thumb-preview">
                             <img src={row.thumbnailPreview} alt="thumb" className="upload-thumb-img" />
                             {!disabled && (
@@ -411,8 +545,8 @@ export default function UploadPage() {
                         <td key={s._id} className="upload-td upload-td--attr">
                           <AttributeCell
                             schema={s}
-                            value={row.attributes[s._id]}
-                            onChange={(val) => updateAttr(row.id, s._id, val)}
+                            value={row.attributes[s.label]}
+                            onChange={(val) => updateAttr(row.id, s.label, val)}
                             disabled={disabled}
                           />
                         </td>

@@ -63,7 +63,21 @@
 
 .person-edit-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.person-saving-indicator {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.person-name-clickable {
+  cursor: pointer;
+}
+
+.person-name-clickable:hover {
+  opacity: 0.75;
 }
 
 /* Attributes */
@@ -93,6 +107,20 @@
   border-bottom: none;
 }
 
+.attr-row--clickable {
+  cursor: pointer;
+  transition: background-color var(--transition);
+  border-radius: var(--radius-sm);
+  padding-left: 4px;
+  padding-right: 4px;
+  margin-left: -4px;
+  margin-right: -4px;
+}
+
+.attr-row--clickable:hover {
+  background-color: var(--color-hover);
+}
+
 .attr-label {
   font-size: 13px;
   font-weight: 500;
@@ -109,6 +137,19 @@
 
 .attr-empty {
   color: var(--color-text-secondary);
+}
+
+.attr-text-display {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.attr-richtext-display {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .attr-checkbox {

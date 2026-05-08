@@ -2,6 +2,7 @@ import * as videoService from '../services/videoService.js';
 import { relativeStoragePath } from '../middleware/upload.js';
 import { encryptFileInPlace, streamDecryptedFile } from '../services/cryptoService.js';
 import { linkPersonVideo } from '../services/personVideoService.js';
+import PersonVideo from '../models/PersonVideo.js';
 
 export async function getAll(req, res, next) {
   try {
@@ -72,7 +73,8 @@ export async function create(req, res, next) {
 
 export async function update(req, res, next) {
   try {
-    const data = { ...req.body };
+    const { people: incomingPeople, ...bodyFields } = req.body;
+    const data = { ...bodyFields };
 
     if (req.files?.thumbnail?.[0]) {
       data.thumbnailUrl = relativeStoragePath(req.files.thumbnail[0]);
@@ -89,6 +91,21 @@ export async function update(req, res, next) {
     }
     if (req.files?.thumbnail?.[0]) {
       await encryptFileInPlace(videoService.resolveUploadPath(data.thumbnailUrl));
+    }
+
+    // Sync person-video links if people were provided
+    if (Array.isArray(incomingPeople)) {
+      const newIds = incomingPeople.map(String);
+      const existing = await PersonVideo.find({ videoId: req.params.id }).lean();
+      const existingIds = existing.map((l) => l.personId.toString());
+
+      const toAdd = newIds.filter((id) => !existingIds.includes(id));
+      const toRemove = existingIds.filter((id) => !newIds.includes(id));
+
+      await Promise.all([
+        ...toAdd.map((pid) => linkPersonVideo(pid, req.params.id)),
+        ...toRemove.map((pid) => PersonVideo.deleteOne({ personId: pid, videoId: req.params.id })),
+      ]);
     }
 
     return res.json(video);

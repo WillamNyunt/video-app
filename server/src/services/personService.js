@@ -1,5 +1,8 @@
+import path from 'path';
+import fs from 'fs';
 import Person from '../models/Person.js';
 import PersonVideo from '../models/PersonVideo.js';
+import PersonPicture from '../models/PersonPicture.js';
 import Video from '../models/Video.js';
 
 export async function getAllPeople() {
@@ -38,8 +41,21 @@ export async function deletePerson(id) {
   if (!person) {
     throw Object.assign(new Error('Person not found'), { status: 404 });
   }
-  // Clean up PersonVideo links
+
   await PersonVideo.deleteMany({ personId: id });
+
+  const storagePath = process.env.STORAGE_PATH || './uploads';
+
+  if (person.profilePicUrl) {
+    try { fs.unlinkSync(path.resolve(storagePath, person.profilePicUrl)); } catch { /* already gone */ }
+  }
+
+  const pictures = await PersonPicture.find({ personId: id });
+  await PersonPicture.deleteMany({ personId: id });
+  for (const pic of pictures) {
+    try { fs.unlinkSync(path.resolve(storagePath, pic.url)); } catch { /* already gone */ }
+  }
+
   return person;
 }
 

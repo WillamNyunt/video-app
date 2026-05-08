@@ -7,11 +7,18 @@ import { getUploadUrl } from '../api/files';
 import { useAuth } from '../context/AuthContext';
 import './LocationDetailPage.css';
 
+function ordinal(n) {
+  const v = n % 100;
+  return (v >= 11 && v <= 13) ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString(undefined, {
-    year: 'numeric', month: 'long', day: 'numeric',
-  });
+  const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const weekday = date.toLocaleDateString(undefined, { weekday: 'long' });
+  const month = date.toLocaleDateString(undefined, { month: 'long' });
+  return `${weekday}, ${month} ${d}${ordinal(d)} ${y}`;
 }
 
 export default function LocationDetailPage() {
@@ -74,7 +81,7 @@ export default function LocationDetailPage() {
   async function handleDelete(e, sessionId) {
     e.stopPropagation();
     setDeleteError('');
-    if (!confirm('Delete this session and all its videos?')) return;
+    if (!confirm('Delete this session? It must have no videos.')) return;
     try {
       await deleteSession(sessionId);
       setSessions((prev) => prev.filter((s) => s._id !== sessionId));

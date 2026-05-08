@@ -30,6 +30,7 @@
    Dark Theme
    ========================================= */
 [data-theme="dark"] {
+  color-scheme: dark;
   --color-bg: #08080f;
   --color-surface: #0f0f1a;
   --color-border: rgba(255, 255, 255, 0.07);

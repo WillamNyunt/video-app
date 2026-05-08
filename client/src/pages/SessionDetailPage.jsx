@@ -10,11 +10,18 @@ import VideoPlayerModal from '../components/VideoPlayerModal';
 import VideoEditModal from '../components/VideoEditModal';
 import './SessionDetailPage.css';
 
+function ordinal(n) {
+  const v = n % 100;
+  return (v >= 11 && v <= 13) ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString(undefined, {
-    year: 'numeric', month: 'long', day: 'numeric',
-  });
+  const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const weekday = date.toLocaleDateString(undefined, { weekday: 'long' });
+  const month = date.toLocaleDateString(undefined, { month: 'long' });
+  return `${weekday}, ${month} ${d}${ordinal(d)} ${y}`;
 }
 
 const SORT_OPTIONS = [

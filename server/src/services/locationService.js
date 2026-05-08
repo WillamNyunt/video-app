@@ -1,4 +1,7 @@
+import path from 'path';
+import fs from 'fs';
 import Location from '../models/Location.js';
+import Session from '../models/Session.js';
 
 export async function getAllLocations() {
   const results = await Location.aggregate([
@@ -62,9 +65,23 @@ export async function updateLocation(id, data) {
 }
 
 export async function deleteLocation(id) {
+  const sessionCount = await Session.countDocuments({ locationId: id });
+  if (sessionCount > 0) {
+    throw Object.assign(
+      new Error(`Cannot delete location: ${sessionCount} session${sessionCount === 1 ? '' : 's'} must be removed first`),
+      { status: 409 }
+    );
+  }
   const location = await Location.findByIdAndDelete(id);
   if (!location) {
     throw Object.assign(new Error('Location not found'), { status: 404 });
+  }
+  const storagePath = process.env.STORAGE_PATH || './uploads';
+  if (location.pictureUrl) {
+    try { fs.unlinkSync(path.resolve(storagePath, location.pictureUrl)); } catch { /* already gone */ }
+  }
+  if (location.thumbnailUrl) {
+    try { fs.unlinkSync(path.resolve(storagePath, location.thumbnailUrl)); } catch { /* already gone */ }
   }
   return location;
 }
